@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proctor — Every test, scored to the mark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+  <header>
+    <div class="wrap header-row">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">Proctor</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="portal-select wrap">
+      <p class="hero-tag">Test platform for institutes and their students</p>
+      <h1>Choose how you're signing in.</h1>
+
+      <div class="portals">
+        <button type="button" class="portal-card admin" id="admin-portal-btn" aria-haspopup="dialog" aria-controls="admin-lock">
+          <span class="portal-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="4.5" y="10.5" width="15" height="10" rx="1.5"/>
+              <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>
+            </svg>
+          </span>
+          <span class="portal-name">Admin portal</span>
+          <span class="portal-desc">Create, publish and grade tests</span>
+          <span class="portal-go">Unlock &amp; continue</span>
+        </button>
+
+        <a class="portal-card student" href="auth.html">
+          <span class="portal-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M12 5 3 9l9 4 9-4-9-4Z"/>
+              <path d="M6.5 11v5c0 1.4 2.46 3 5.5 3s5.5-1.6 5.5-3v-5"/>
+            </svg>
+          </span>
+          <span class="portal-name">Student portal</span>
+          <span class="portal-desc">Sit a test and view your results</span>
+          <span class="portal-go">Continue</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <span>Proctor</span>
+    <span>Built for institutes running graded tests at scale</span>
+  </footer>
+
+  <!-- Admin lock dialog -->
+  <div class="lock-overlay" id="admin-lock-overlay" hidden>
+    <div class="lock-dialog" id="admin-lock" role="dialog" aria-modal="true" aria-labelledby="lock-title">
+      <button type="button" class="lock-close" id="admin-lock-close" aria-label="Close">×</button>
+      <span class="lock-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6">
+          <rect x="4.5" y="10.5" width="15" height="10" rx="1.5"/>
+          <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>
+        </svg>
+      </span>
+      <h2 id="lock-title">Admin access</h2>
+      <p class="lock-sub">Enter the admin password to continue.</p>
+      <form id="admin-lock-form" novalidate>
+        <label class="lock-field">
+          <span>Password</span>
+          <input type="password" id="admin-lock-input" autocomplete="current-password" placeholder="••••••••">
+        </label>
+        <p class="lock-error" id="admin-lock-error" hidden>That password isn't right. Try again.</p>
+        <button type="submit" class="btn-primary lock-submit">Unlock admin portal</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var ADMIN_PASSWORD = "admin123"; // demo only — replace with real server-side auth
+      var openBtn = document.getElementById('admin-portal-btn');
+      var overlay = document.getElementById('admin-lock-overlay');
+      var closeBtn = document.getElementById('admin-lock-close');
+      var form = document.getElementById('admin-lock-form');
+      var input = document.getElementById('admin-lock-input');
+      var error = document.getElementById('admin-lock-error');
+      var lastFocused = null;
+
+      function openLock() {
+        lastFocused = document.activeElement;
+        overlay.hidden = false;
+        error.hidden = true;
+        input.value = '';
+        document.body.style.overflow = 'hidden';
+        setTimeout(function () { input.focus(); }, 0);
+      }
+
+      function closeLock() {
+        overlay.hidden = true;
+        document.body.style.overflow = '';
+        if (lastFocused) lastFocused.focus();
+      }
+
+      openBtn.addEventListener('click', openLock);
+      closeBtn.addEventListener('click', closeLock);
+
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closeLock();
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !overlay.hidden) closeLock();
+      });
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (input.value === ADMIN_PASSWORD) {
+          window.location.href = 'create-test.html';
+        } else {
+          error.hidden = false;
+          input.focus();
+          input.select();
+          var dialog = document.getElementById('admin-lock');
+          dialog.classList.remove('shake');
+          void dialog.offsetWidth;
+          dialog.classList.add('shake');
+        }
+      });
+    })();
+  </script>
+
+</body>
+</html>

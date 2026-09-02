@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ICAR Test Series | Login / Register</title>
+<link rel="stylesheet" href="index.css" />
+<style>
+  :root{
+    --primary:#1e6f3f;
+    --primary-dark:#154d2b;
+    --accent:#f2a900;
+    --bg:#f4f7f5;
+    --card-bg:#ffffff;
+    --text:#1b1f1d;
+    --muted:#6b7570;
+    --error:#c0392b;
+    --success:#1e6f3f;
+    --border:#dde3df;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Segoe UI', Roboto, Arial, sans-serif;
+    background:linear-gradient(160deg, var(--bg) 0%, #e7efe9 100%);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+
+  .auth-wrapper{
+    width:100%;
+    max-width:420px;
+  }
+
+  .brand{
+    text-align:center;
+    margin-bottom:22px;
+  }
+  .brand h1{
+    margin:0;
+    font-size:26px;
+    color:var(--primary-dark);
+    letter-spacing:0.5px;
+  }
+  .brand p{
+    margin:4px 0 0;
+    color:var(--muted);
+    font-size:14px;
+  }
+
+  .auth-card{
+    background:var(--card-bg);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:32px 28px 28px;
+    box-shadow:0 10px 30px rgba(20,40,25,0.08);
+  }
+
+  .tabs{
+    display:flex;
+    background:var(--bg);
+    border-radius:10px;
+    padding:4px;
+    margin-bottom:24px;
+  }
+  .tab-btn{
+    flex:1;
+    padding:10px 0;
+    border:none;
+    background:transparent;
+    border-radius:8px;
+    font-size:14px;
+    font-weight:600;
+    color:var(--muted);
+    cursor:pointer;
+    transition:all 0.2s ease;
+  }
+  .tab-btn.active{
+    background:var(--primary);
+    color:#fff;
+    box-shadow:0 3px 8px rgba(30,111,63,0.3);
+  }
+
+  form{
+    display:none;
+    flex-direction:column;
+    gap:14px;
+  }
+  form.active{
+    display:flex;
+  }
+
+  .field label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:var(--text);
+    margin-bottom:5px;
+  }
+  .field input{
+    width:100%;
+    padding:11px 13px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:14px;
+    outline:none;
+    transition:border-color 0.15s ease, box-shadow 0.15s ease;
+    background:#fbfcfb;
+  }
+  .field input:focus{
+    border-color:var(--primary);
+    box-shadow:0 0 0 3px rgba(30,111,63,0.12);
+    background:#fff;
+  }
+
+  .submit-btn{
+    margin-top:6px;
+    padding:12px;
+    border:none;
+    border-radius:8px;
+    background:var(--primary);
+    color:#fff;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    transition:background 0.15s ease, transform 0.1s ease;
+  }
+  .submit-btn:hover{ background:var(--primary-dark); }
+  .submit-btn:active{ transform:scale(0.98); }
+  .submit-btn:disabled{
+    background:#a9b5ae;
+    cursor:not-allowed;
+  }
+
+  .msg{
+    min-height:18px;
+    font-size:13px;
+    text-align:center;
+    margin-top:2px;
+  }
+  .msg.error{ color:var(--error); }
+  .msg.success{ color:var(--success); }
+
+  .divider{
+    text-align:center;
+    color:var(--muted);
+    font-size:12px;
+    margin:8px 0;
+  }
+
+  .foot-note{
+    text-align:center;
+    font-size:13px;
+    color:var(--muted);
+    margin-top:16px;
+  }
+  .foot-note button{
+    background:none;
+    border:none;
+    color:var(--primary);
+    font-weight:700;
+    cursor:pointer;
+    font-size:13px;
+    padding:0;
+  }
+
+  .spinner{
+    width:16px;
+    height:16px;
+    border:2px solid rgba(255,255,255,0.5);
+    border-top-color:#fff;
+    border-radius:50%;
+    display:inline-block;
+    vertical-align:middle;
+    margin-right:8px;
+    animation:spin 0.7s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="auth-wrapper">
+  <div class="brand">
+    <h1>ICAR Test Series</h1>
+    <p>Sign in or create your account to continue</p>
+  </div>
+
+  <div class="auth-card">
+    <div class="tabs">
+      <button type="button" class="tab-btn active" id="tabLogin">Login</button>
+      <button type="button" class="tab-btn" id="tabRegister">Register</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <form id="loginForm" class="active">
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com" required autocomplete="email" />
+      </div>
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter password" required autocomplete="current-password" />
+      </div>
+      <div class="msg" id="loginMsg"></div>
+      <button type="submit" class="submit-btn" id="loginBtn">Login</button>
+      <div class="foot-note">
+        New here? <button type="button" id="goRegister">Create an account</button>
+      </div>
+    </form>
+
+    <!-- REGISTER FORM -->
+    <form id="registerForm">
+      <div class="field">
+        <label for="regName">Full Name</label>
+        <input type="text" id="regName" placeholder="Your full name" required autocomplete="name" />
+      </div>
+      <div class="field">
+        <label for="regEmail">Email</label>
+        <input type="email" id="regEmail" placeholder="you@example.com" required autocomplete="email" />
+      </div>
+      <div class="field">
+        <label for="regPhone">Phone Number</label>
+        <input type="tel" id="regPhone" placeholder="10-digit mobile number" pattern="[0-9]{10}" required autocomplete="tel" />
+      </div>
+      <div class="field">
+        <label for="regPassword">Password</label>
+        <input type="password" id="regPassword" placeholder="Minimum 6 characters" minlength="6" required autocomplete="new-password" />
+      </div>
+      <div class="msg" id="registerMsg"></div>
+      <button type="submit" class="submit-btn" id="registerBtn">Create Account</button>
+      <div class="foot-note">
+        Already registered? <button type="button" id="goLogin">Login instead</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+  import { app } from "./firebase-config.js";
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    updateProfile,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    setDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // ---------- Tab switching ----------
+  const tabLogin = document.getElementById("tabLogin");
+  const tabRegister = document.getElementById("tabRegister");
+  const loginForm = document.getElementById("loginForm");
+  const registerForm = document.getElementById("registerForm");
+
+  function showLogin(){
+    tabLogin.classList.add("active");
+    tabRegister.classList.remove("active");
+    loginForm.classList.add("active");
+    registerForm.classList.remove("active");
+    clearMsgs();
+  }
+  function showRegister(){
+    tabRegister.classList.add("active");
+    tabLogin.classList.remove("active");
+    registerForm.classList.add("active");
+    loginForm.classList.remove("active");
+    clearMsgs();
+  }
+  function clearMsgs(){
+    loginMsg.textContent = "";
+    registerMsg.textContent = "";
+    loginMsg.className = "msg";
+    registerMsg.className = "msg";
+  }
+
+  tabLogin.addEventListener("click", showLogin);
+  tabRegister.addEventListener("click", showRegister);
+  document.getElementById("goRegister").addEventListener("click", showRegister);
+  document.getElementById("goLogin").addEventListener("click", showLogin);
+
+  // ---------- Helpers ----------
+  const loginMsg = document.getElementById("loginMsg");
+  const registerMsg = document.getElementById("registerMsg");
+  const loginBtn = document.getElementById("loginBtn");
+  const registerBtn = document.getElementById("registerBtn");
+
+  function setMsg(el, text, type){
+    el.textContent = text;
+    el.className = "msg " + (type || "");
+  }
+
+  function friendlyError(code){
+    const map = {
+      "auth/invalid-email": "That email address looks invalid.",
+      "auth/user-not-found": "No account found with this email.",
+      "auth/wrong-password": "Incorrect password. Please try again.",
+      "auth/invalid-credential": "Incorrect email or password.",
+      "auth/email-already-in-use": "An account already exists with this email.",
+      "auth/weak-password": "Password should be at least 6 characters.",
+      "auth/too-many-requests": "Too many attempts. Please try again later.",
+      "auth/network-request-failed": "Network error. Check your connection.",
+      "permission-denied": "Database blocked this save. Your Firestore Rules need to be updated (see instructions)."
+    };
+    return map[code] || ("Something went wrong (" + (code || "unknown error") + "). Please screenshot this and send it to support.");
+  }
+
+  function setLoading(btn, isLoading, defaultText){
+    btn.disabled = isLoading;
+    btn.innerHTML = isLoading
+      ? '<span class="spinner"></span>Please wait...'
+      : defaultText;
+  }
+
+  // ---------- If already logged in, skip straight to dashboard ----------
+  onAuthStateChanged(auth, (user) => {
+    if (user && sessionStorage.getItem("icar_just_loaded") !== "1") {
+      sessionStorage.setItem("icar_just_loaded", "1");
+      window.location.href = "dashboard.html";
+    }
+  });
+
+  // ---------- Login ----------
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearMsgs();
+
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    setLoading(loginBtn, true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      setMsg(loginMsg, "Login successful. Redirecting...", "success");
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      setMsg(loginMsg, friendlyError(err.code), "error");
+      setLoading(loginBtn, false, "Login");
+    }
+  });
+
+  // ---------- Register ----------
+  registerForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearMsgs();
+
+    const name = document.getElementById("regName").value.trim();
+    const email = document.getElementById("regEmail").value.trim();
+    const phone = document.getElementById("regPhone").value.trim();
+    const password = document.getElementById("regPassword").value;
+
+    setLoading(registerBtn, true);
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const user = cred.user;
+
+      // Update Auth profile display name
+      await updateProfile(user, { displayName: name });
+
+      // Create matching user document in Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        name: name,
+        email: email,
+        phone: phone,
+        role: "student",
+        createdAt: serverTimestamp()
+      });
+
+      setMsg(registerMsg, "Account created! Redirecting...", "success");
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      setMsg(registerMsg, friendlyError(err.code), "error");
+      setLoading(registerBtn, false, "Create Account");
+    }
+  });
+</script>
+
+</body>
+</html>

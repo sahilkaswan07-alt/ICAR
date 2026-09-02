@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard | ICAR Test Series</title>
+<link rel="stylesheet" href="index.css" />
+<style>
+  :root{
+    --primary:#1e6f3f;
+    --primary-dark:#154d2b;
+    --accent:#f2a900;
+    --bg:#f4f7f5;
+    --card-bg:#ffffff;
+    --text:#1b1f1d;
+    --muted:#6b7570;
+    --error:#c0392b;
+    --success:#1e6f3f;
+    --border:#dde3df;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Segoe UI', Roboto, Arial, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+
+  /* ---------- Loading screen ---------- */
+  #loadingScreen{
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap:12px;
+    background:var(--bg);
+    z-index:50;
+  }
+  .spinner-lg{
+    width:36px;
+    height:36px;
+    border:3px solid var(--border);
+    border-top-color:var(--primary);
+    border-radius:50%;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  #loadingScreen p{ color:var(--muted); font-size:14px; }
+
+  /* ---------- Topbar ---------- */
+  .topbar{
+    background:var(--card-bg);
+    border-bottom:1px solid var(--border);
+    padding:14px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:sticky;
+    top:0;
+    z-index:10;
+  }
+  .topbar .brand{
+    font-size:18px;
+    font-weight:800;
+    color:var(--primary-dark);
+  }
+  .topbar .brand span{ color:var(--accent); }
+
+  .user-chip{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .avatar{
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    background:var(--primary);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    font-size:14px;
+  }
+  .user-meta{
+    display:flex;
+    flex-direction:column;
+    line-height:1.2;
+  }
+  .user-meta .name{ font-size:14px; font-weight:700; }
+  .user-meta .role{ font-size:12px; color:var(--muted); text-transform:capitalize; }
+
+  .logout-btn{
+    margin-left:14px;
+    padding:8px 16px;
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+    color:var(--error);
+    cursor:pointer;
+    transition:background 0.15s ease;
+  }
+  .logout-btn:hover{ background:#fdecea; }
+
+  /* ---------- Main content ---------- */
+  .container{
+    max-width:1080px;
+    margin:0 auto;
+    padding:28px 24px 60px;
+  }
+
+  .welcome{
+    margin-bottom:24px;
+  }
+  .welcome h1{
+    margin:0 0 4px;
+    font-size:24px;
+  }
+  .welcome p{
+    margin:0;
+    color:var(--muted);
+    font-size:14px;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));
+    gap:18px;
+    margin-bottom:32px;
+  }
+
+  .stat-card{
+    background:var(--card-bg);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:18px 20px;
+  }
+  .stat-card .label{
+    font-size:12px;
+    color:var(--muted);
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+  }
+  .stat-card .value{
+    font-size:26px;
+    font-weight:800;
+    color:var(--primary-dark);
+    margin-top:6px;
+  }
+
+  .section-title{
+    font-size:16px;
+    font-weight:800;
+    margin:0 0 14px;
+    color:var(--text);
+  }
+
+  .action-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
+    gap:16px;
+  }
+
+  .action-card{
+    background:var(--card-bg);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:20px;
+    text-decoration:none;
+    color:var(--text);
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    transition:transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .action-card:hover{
+    transform:translateY(-2px);
+    box-shadow:0 10px 24px rgba(20,40,25,0.08);
+    border-color:var(--primary);
+  }
+  .action-card .icon{
+    width:38px;
+    height:38px;
+    border-radius:10px;
+    background:rgba(30,111,63,0.1);
+    color:var(--primary);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+    font-weight:800;
+  }
+  .action-card .title{
+    font-size:15px;
+    font-weight:700;
+  }
+  .action-card .desc{
+    font-size:13px;
+    color:var(--muted);
+    line-height:1.4;
+  }
+  .action-card.admin{
+    border-color:var(--accent);
+    background:linear-gradient(0deg, rgba(242,169,0,0.04), rgba(242,169,0,0.04));
+  }
+  .action-card.admin .icon{
+    background:rgba(242,169,0,0.15);
+    color:var(--accent);
+  }
+
+  .badge-admin{
+    display:inline-block;
+    margin-left:8px;
+    padding:2px 8px;
+    font-size:11px;
+    font-weight:700;
+    background:var(--accent);
+    color:#fff;
+    border-radius:20px;
+    vertical-align:middle;
+  }
+
+  #adminSection{ display:none; }
+
+  @media (max-width:520px){
+    .topbar{ padding:12px 16px; }
+    .user-meta{ display:none; }
+    .container{ padding:22px 16px 50px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Full-screen loader shown while we verify auth state -->
+<div id="loadingScreen">
+  <div class="spinner-lg"></div>
+  <p>Loading your dashboard...</p>
+</div>
+
+<div id="app" style="display:none;">
+
+  <div class="topbar">
+    <div class="brand">ICAR <span>Test Series</span></div>
+    <div class="user-chip">
+      <div class="avatar" id="avatarInitial">?</div>
+      <div class="user-meta">
+        <span class="name" id="userName">Loading...</span>
+        <span class="role" id="userRole">-</span>
+      </div>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="welcome">
+      <h1 id="welcomeText">Welcome back!</h1>
+      <p>Here's what's happening with your test preparation.</p>
+    </div>
+
+    <div class="grid">
+      <div class="stat-card">
+        <div class="label">Tests Attempted</div>
+        <div class="value" id="statAttempted">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Account Status</div>
+        <div class="value" id="statStatus">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Member Since</div>
+        <div class="value" id="statSince">—</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Quick Actions</h2>
+    <div class="action-grid">
+      <a href="tests.html" class="action-card">
+        <div class="icon">T</div>
+        <div class="title">Take a Test</div>
+        <div class="desc">Browse available tests and start a new attempt.</div>
+      </a>
+      <a href="payment.html" class="action-card">
+        <div class="icon">₹</div>
+        <div class="title">Upgrade / Payments</div>
+        <div class="desc">Unlock premium test series and view payment history.</div>
+      </a>
+    </div>
+
+    <div id="adminSection" style="margin-top:32px;">
+      <h2 class="section-title">Admin Tools <span class="badge-admin">ADMIN</span></h2>
+      <div class="action-grid">
+        <a href="create-test.html" class="action-card admin">
+          <div class="icon">+</div>
+          <div class="title">Create Test</div>
+          <div class="desc">Add a new test with questions and answer keys.</div>
+        </a>
+        <a href="admin-payments.html" class="action-card admin">
+          <div class="icon">$</div>
+          <div class="title">Manage Payments</div>
+          <div class="desc">Review and verify student payment submissions.</div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+  import { app } from "./firebase-config.js";
+  import {
+    getAuth,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const loadingScreen = document.getElementById("loadingScreen");
+  const appEl = document.getElementById("app");
+
+  // ---------- Auth guard ----------
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      // Not logged in -> send back to auth page
+      window.location.href = "auth.html";
+      return;
+    }
+
+    try {
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      const userData = userSnap.exists() ? userSnap.data() : {};
+
+      const name = userData.name || user.displayName || "Student";
+      const role = userData.role || "student";
+      const email = userData.email || user.email || "";
+
+      // Header
+      document.getElementById("userName").textContent = name;
+      document.getElementById("userRole").textContent = role;
+      document.getElementById("avatarInitial").textContent = name.charAt(0).toUpperCase();
+      document.getElementById("welcomeText").textContent = `Welcome back, ${name.split(" ")[0]}!`;
+
+      // Stats
+      document.getElementById("statAttempted").textContent =
+        typeof userData.testsAttempted === "number" ? userData.testsAttempted : 0;
+      document.getElementById("statStatus").textContent =
+        userData.premium ? "Premium" : "Free";
+      document.getElementById("statSince").textContent = formatDate(userData.createdAt);
+
+      // Show admin tools if role is admin
+      if (role === "admin") {
+        document.getElementById("adminSection").style.display = "block";
+      }
+
+      // Reveal app, hide loader
+      loadingScreen.style.display = "none";
+      appEl.style.display = "block";
+
+    } catch (err) {
+      console.error("Failed to load user data:", err);
+      loadingScreen.querySelector("p").textContent =
+        "Couldn't load your profile. Please refresh the page.";
+    }
+  });
+
+  function formatDate(timestamp){
+    if (!timestamp || !timestamp.toDate) return "—";
+    const d = timestamp.toDate();
+    return d.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+  }
+
+  // ---------- Logout ----------
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    try {
+      await signOut(auth);
+      sessionStorage.removeItem("icar_just_loaded");
+      window.location.href = "auth.html";
+    } catch (err) {
+      console.error("Logout failed:", err);
+      alert("Failed to logout. Please try again.");
+    }
+  });
+</script>
+
+</body>
+</html>
