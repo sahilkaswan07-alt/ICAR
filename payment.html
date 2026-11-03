@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Upgrade to Premium | ICAR Test Series</title>
+<link rel="stylesheet" href="index.css" />
+<style>
+  :root{
+    --primary:#1e6f3f;
+    --primary-dark:#154d2b;
+    --accent:#f2a900;
+    --bg:#f4f7f5;
+    --card-bg:#ffffff;
+    --text:#1b1f1d;
+    --muted:#6b7570;
+    --error:#c0392b;
+    --success:#1e6f3f;
+    --warn:#b7791f;
+    --border:#dde3df;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Segoe UI', Roboto, Arial, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+
+  /* ---------- Loading screen ---------- */
+  #loadingScreen{
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap:12px;
+    background:var(--bg);
+    z-index:50;
+  }
+  .spinner-lg{
+    width:36px;
+    height:36px;
+    border:3px solid var(--border);
+    border-top-color:var(--primary);
+    border-radius:50%;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  #loadingScreen p{ color:var(--muted); font-size:14px; }
+
+  /* ---------- Topbar ---------- */
+  .topbar{
+    background:var(--card-bg);
+    border-bottom:1px solid var(--border);
+    padding:14px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:sticky;
+    top:0;
+    z-index:10;
+  }
+  .topbar .brand{
+    font-size:18px;
+    font-weight:800;
+    color:var(--primary-dark);
+    text-decoration:none;
+  }
+  .topbar .brand span{ color:var(--accent); }
+  .back-link{
+    font-size:13px;
+    font-weight:600;
+    color:var(--muted);
+    text-decoration:none;
+  }
+  .back-link:hover{ color:var(--primary); }
+
+  .container{
+    max-width:640px;
+    margin:0 auto;
+    padding:32px 20px 60px;
+  }
+
+  .page-title{
+    text-align:center;
+    margin-bottom:28px;
+  }
+  .page-title h1{
+    margin:0 0 6px;
+    font-size:24px;
+  }
+  .page-title p{
+    margin:0;
+    color:var(--muted);
+    font-size:14px;
+  }
+
+  .card{
+    background:var(--card-bg);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:24px;
+    margin-bottom:20px;
+  }
+
+  /* ---------- Status banners ---------- */
+  .status-banner{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+    padding:18px 20px;
+    border-radius:12px;
+    margin-bottom:20px;
+  }
+  .status-banner.success{ background:#eaf6ee; border:1px solid #bfe3cc; }
+  .status-banner.pending{ background:#fff8e8; border:1px solid #f2d98a; }
+  .status-banner.rejected{ background:#fdecea; border:1px solid #f3b9b2; }
+  .status-banner .icon{
+    font-size:22px;
+    line-height:1;
+  }
+  .status-banner .title{
+    font-weight:800;
+    font-size:15px;
+    margin-bottom:4px;
+  }
+  .status-banner.success .title{ color:var(--success); }
+  .status-banner.pending .title{ color:var(--warn); }
+  .status-banner.rejected .title{ color:var(--error); }
+  .status-banner .desc{
+    font-size:13px;
+    color:var(--muted);
+    line-height:1.5;
+  }
+
+  /* ---------- Plan card ---------- */
+  .plan-card{
+    border:2px solid var(--primary);
+    position:relative;
+    overflow:hidden;
+  }
+  .plan-badge{
+    position:absolute;
+    top:0;
+    right:0;
+    background:var(--accent);
+    color:#fff;
+    font-size:11px;
+    font-weight:800;
+    padding:5px 14px;
+    border-bottom-left-radius:10px;
+  }
+  .plan-name{
+    font-size:16px;
+    font-weight:700;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  .plan-price{
+    font-size:34px;
+    font-weight:900;
+    color:var(--primary-dark);
+    margin-bottom:2px;
+  }
+  .plan-price span{
+    font-size:14px;
+    font-weight:600;
+    color:var(--muted);
+  }
+  .plan-features{
+    list-style:none;
+    padding:0;
+    margin:18px 0 0;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .plan-features li{
+    font-size:14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .plan-features li::before{
+    content:"✓";
+    color:var(--primary);
+    font-weight:800;
+  }
+
+  /* ---------- Payment instructions ---------- */
+  .upi-box{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    background:var(--bg);
+    border:1px dashed var(--border);
+    border-radius:10px;
+    padding:14px 16px;
+    margin-top:16px;
+  }
+  .upi-box .upi-id{
+    font-family:monospace;
+    font-size:15px;
+    font-weight:700;
+    color:var(--primary-dark);
+  }
+  .copy-btn{
+    padding:7px 14px;
+    border:1px solid var(--primary);
+    background:#fff;
+    color:var(--primary);
+    border-radius:7px;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .copy-btn:hover{ background:var(--primary); color:#fff; }
+
+  .steps-list{
+    margin:16px 0 0;
+    padding-left:20px;
+    font-size:13.5px;
+    color:var(--text);
+    line-height:1.9;
+  }
+
+  /* ---------- Form ---------- */
+  .field{ margin-bottom:14px; }
+  .field label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:var(--text);
+    margin-bottom:5px;
+  }
+  .field input, .field select{
+    width:100%;
+    padding:11px 13px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:14px;
+    outline:none;
+    background:#fbfcfb;
+  }
+  .field input:focus, .field select:focus{
+    border-color:var(--primary);
+    box-shadow:0 0 0 3px rgba(30,111,63,0.12);
+    background:#fff;
+  }
+  .field small{
+    display:block;
+    color:var(--muted);
+    font-size:12px;
+    margin-top:4px;
+  }
+
+  .submit-btn{
+    width:100%;
+    margin-top:8px;
+    padding:13px;
+    border:none;
+    border-radius:8px;
+    background:var(--primary);
+    color:#fff;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .submit-btn:hover{ background:var(--primary-dark); }
+  .submit-btn:disabled{ background:#a9b5ae; cursor:not-allowed; }
+
+  .msg{
+    min-height:18px;
+    font-size:13px;
+    text-align:center;
+    margin-top:10px;
+  }
+  .msg.error{ color:var(--error); }
+  .msg.success{ color:var(--success); }
+
+  .spinner{
+    width:14px;
+    height:14px;
+    border:2px solid rgba(255,255,255,0.5);
+    border-top-color:#fff;
+    border-radius:50%;
+    display:inline-block;
+    vertical-align:middle;
+    margin-right:8px;
+    animation:spin 0.7s linear infinite;
+  }
+
+  #paymentFormCard{ display:none; }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen">
+  <div class="spinner-lg"></div>
+  <p>Loading...</p>
+</div>
+
+<div id="app" style="display:none;">
+
+  <div class="topbar">
+    <a href="dashboard.html" class="brand">ICAR <span>Test Series</span></a>
+    <a href="dashboard.html" class="back-link">&larr; Back to Dashboard</a>
+  </div>
+
+  <div class="container">
+    <div class="page-title">
+      <h1>Upgrade to Premium</h1>
+      <p>Unlock the full test series and detailed performance analysis.</p>
+    </div>
+
+    <!-- Shown if already premium -->
+    <div id="alreadyPremiumBanner" class="status-banner success" style="display:none;">
+      <div class="icon">✅</div>
+      <div>
+        <div class="title">You're a Premium Member</div>
+        <div class="desc">You have full access to all tests. Thanks for supporting ICAR Test Series!</div>
+      </div>
+    </div>
+
+    <!-- Shown if a payment is pending review -->
+    <div id="pendingBanner" class="status-banner pending" style="display:none;">
+      <div class="icon">⏳</div>
+      <div>
+        <div class="title">Payment Under Review</div>
+        <div class="desc">We've received your payment details and it's being verified. This usually takes a few hours. You'll get access automatically once approved.</div>
+      </div>
+    </div>
+
+    <!-- Shown if a previous payment was rejected -->
+    <div id="rejectedBanner" class="status-banner rejected" style="display:none;">
+      <div class="icon">⚠️</div>
+      <div>
+        <div class="title">Previous Submission Rejected</div>
+        <div class="desc" id="rejectedReason">We couldn't verify your last payment. Please double-check the details below and submit again.</div>
+      </div>
+    </div>
+
+    <!-- Plan card, hidden if already premium -->
+    <div class="card plan-card" id="planCard">
+      <div class="plan-badge">MOST POPULAR</div>
+      <div class="plan-name">ICAR Premium Test Series</div>
+      <div class="plan-price">₹699 <span>/ 3 months</span></div>
+      <ul class="plan-features">
+        <li>Unlimited access to all mock tests</li>
+        <li>Detailed score analysis & rank comparison</li>
+        <li>New tests added every week</li>
+        <li>Priority doubt support</li>
+      </ul>
+    </div>
+
+    <!-- Payment instructions + form, hidden if premium or pending -->
+    <div class="card" id="paymentFormCard">
+      <h3 style="margin-top:0;">Step 1 — Pay via UPI</h3>
+      <div class="upi-box">
+        <span class="upi-id" id="upiId">icartestseries@upi</span>
+        <button class="copy-btn" id="copyUpiBtn">Copy</button>
+      </div>
+      <ol class="steps-list">
+        <li>Open any UPI app (Google Pay, PhonePe, Paytm).</li>
+        <li>Pay <strong>₹699</strong> to the UPI ID above.</li>
+        <li>Copy the 12-digit UPI transaction / reference ID from your payment app.</li>
+        <li>Paste it below and submit for verification.</li>
+      </ol>
+
+      <h3>Step 2 — Confirm Your Payment</h3>
+      <form id="paymentForm">
+        <div class="field">
+          <label for="utrInput">UPI Transaction / Reference ID (UTR)</label>
+          <input type="text" id="utrInput" placeholder="e.g. 402911234567" pattern="[A-Za-z0-9]{6,25}" required />
+          <small>Found in your payment app's transaction history right after paying.</small>
+        </div>
+        <div class="field">
+          <label for="amountPaid">Amount Paid (₹)</label>
+          <input type="number" id="amountPaid" value="699" min="1" required />
+        </div>
+        <div class="msg" id="paymentMsg"></div>
+        <button type="submit" class="submit-btn" id="paymentSubmitBtn">Submit for Verification</button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+  import { app } from "./firebase-config.js";
+  import {
+    getAuth,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const loadingScreen = document.getElementById("loadingScreen");
+  const appEl = document.getElementById("app");
+
+  let currentUser = null;
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = "auth.html";
+      return;
+    }
+    currentUser = user;
+    await loadStatus();
+    loadingScreen.style.display = "none";
+    appEl.style.display = "block";
+  });
+
+  async function loadStatus(){
+    try {
+      // Check premium status from users doc
+      const userSnap = await getDoc(doc(db, "users", currentUser.uid));
+      const userData = userSnap.exists() ? userSnap.data() : {};
+
+      if (userData.premium === true) {
+        show("alreadyPremiumBanner");
+        document.getElementById("planCard").style.display = "none";
+        document.getElementById("paymentFormCard").style.display = "none";
+        return;
+      }
+
+      // Check for an existing payment submission
+      const paySnap = await getDoc(doc(db, "payments", currentUser.uid));
+      if (paySnap.exists()) {
+        const payData = paySnap.data();
+        if (payData.status === "pending") {
+          show("pendingBanner");
+          document.getElementById("paymentFormCard").style.display = "none";
+          return;
+        }
+        if (payData.status === "rejected") {
+          show("rejectedBanner");
+          if (payData.reviewNote) {
+            document.getElementById("rejectedReason").textContent = payData.reviewNote;
+          }
+        }
+      }
+
+      // Default: show the payment form
+      document.getElementById("paymentFormCard").style.display = "block";
+
+    } catch (err) {
+      console.error("Failed to load payment status:", err);
+    }
+  }
+
+  function show(id){
+    document.getElementById(id).style.display = "flex";
+  }
+
+  // ---------- Copy UPI ID ----------
+  document.getElementById("copyUpiBtn").addEventListener("click", () => {
+    const upiId = document.getElementById("upiId").textContent;
+    navigator.clipboard.writeText(upiId).then(() => {
+      const btn = document.getElementById("copyUpiBtn");
+      const original = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    });
+  });
+
+  // ---------- Submit payment proof ----------
+  const paymentForm = document.getElementById("paymentForm");
+  const paymentMsg = document.getElementById("paymentMsg");
+  const paymentSubmitBtn = document.getElementById("paymentSubmitBtn");
+
+  function friendlyError(code){
+    const map = {
+      "permission-denied": "Couldn't submit \u2014 database rules need to allow this. Contact support."
+    };
+    return map[code] || ("Something went wrong (" + (code || "unknown error") + "). Please try again.");
+  }
+
+  paymentForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    paymentMsg.textContent = "";
+    paymentMsg.className = "msg";
+
+    const utr = document.getElementById("utrInput").value.trim();
+    const amount = Number(document.getElementById("amountPaid").value);
+
+    paymentSubmitBtn.disabled = true;
+    paymentSubmitBtn.innerHTML = '<span class="spinner"></span>Submitting...';
+
+    try {
+      await setDoc(doc(db, "payments", currentUser.uid), {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        utr: utr,
+        amount: amount,
+        planName: "ICAR Premium Test Series",
+        status: "pending",
+        createdAt: serverTimestamp()
+      });
+
+      paymentMsg.textContent = "Submitted! We'll verify it shortly.";
+      paymentMsg.className = "msg success";
+
+      setTimeout(() => { window.location.reload(); }, 1200);
+
+    } catch (err) {
+      paymentMsg.textContent = friendlyError(err.code);
+      paymentMsg.className = "msg error";
+      paymentSubmitBtn.disabled = false;
+      paymentSubmitBtn.textContent = "Submit for Verification";
+    }
+  });
+</script>
+
+</body>
+</html>

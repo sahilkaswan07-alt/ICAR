@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proctor — Available tests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tests.css">
+<style>.hidden { display: none !important; }</style>
+</head>
+<body>
+
+  <header>
+    <div class="wrap header-row">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">ICAR - 2027</span>
+      </a>
+      <a class="nav-btn" href="index.html">← Back</a>
+    </div>
+  </header>
+
+  <main class="wrap tests-main">
+    <div class="block-head">
+      <p class="hero-tag">Student portal</p>
+      <h1>Available tests</h1>
+      <p class="block-sub">Pick a test to view its details, then start when you're ready.</p>
+    </div>
+
+    <ul class="test-list" id="testList">
+
+      <li class="test-card" data-static="true">
+        <div class="test-card-main">
+          <span class="test-no">Test No. 001</span>
+          <h2 class="test-name">ICAR Mock Test</h2>
+          <div class="test-meta">
+            <span>120 questions</span>
+            <span class="dot" aria-hidden="true"></span>
+            <span>120 minutes</span>
+          </div>
+        </div>
+        <div class="test-card-side">
+          <span class="price-badge free">Free</span>
+          <a class="btn-primary start-btn" href="take-test.html">Start test</a>
+        </div>
+      </li>
+
+    </ul>
+
+    <div class="empty-state hidden" id="emptyState">
+      <p>No tests are available right now. Please check back soon.</p>
+    </div>
+  </main>
+
+  <footer class="wrap">
+    <span>ICAR - 2027</span>
+    <span>All The Best </span>
+  </footer>
+
+  <script type="module" src="tests.js"></script>
+
+</body>
+</html>

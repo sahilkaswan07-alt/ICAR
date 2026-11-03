@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Create Test | Test Management System</title>
+
+    <link rel="stylesheet" href="create-test.css">
+
+    <style>
+        .modal-visibility{
+            margin: 14px 0;
+            padding: 14px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .modal-visibility > span{
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            color: #777;
+            margin-bottom: 8px;
+        }
+        .visibility-options{
+            display: flex;
+            gap: 18px;
+        }
+        .visibility-options label{
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .visibility-tag{
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 9px;
+            border-radius: 20px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .visibility-tag.free{
+            background: #e8f5ee;
+            color: #1e6f3f;
+        }
+        .visibility-tag.premium{
+            background: #fff3e0;
+            color: #b7791f;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- ================= HEADER ================= -->
+
+<header class="topbar">
+
+    <div class="brand">
+        <div class="logo">ICAR</div>
+
+        <div>
+            <h2>Test Management System</h2>
+            <p>Admin Panel</p>
+        </div>
+    </div>
+
+    <button class="new-test-top" id="newTestTop">
+        + New Test
+    </button>
+
+</header>
+
+
+<!-- ================= MAIN ================= -->
+
+<main class="container">
+
+    <!-- ================= TEST LIST ================= -->
+
+    <section id="testListPage">
+
+        <div class="page-heading">
+
+            <div>
+                <h1>My Tests</h1>
+
+                <p>
+                    Create and manage your examination tests.
+                </p>
+            </div>
+
+            <button
+                class="primary-btn"
+                id="createNewTest">
+                + Create New Test
+            </button>
+
+        </div>
+
+
+        <!-- TEST CARDS -->
+
+        <div
+            class="tests-grid"
+            id="testsGrid">
+
+        </div>
+
+
+        <!-- EMPTY STATE -->
+
+        <div
+            class="empty-state"
+            id="emptyState">
+
+            <div class="empty-icon">
+                +
+            </div>
+
+            <h2>No Tests Created</h2>
+
+            <p>
+                Create your first test and start adding questions.
+            </p>
+
+            <button
+                class="primary-btn"
+                id="emptyCreateBtn">
+                Create New Test
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= CREATE TEST PAGE ================= -->
+
+    <section
+        id="testEditorPage"
+        class="hidden">
+
+        <!-- EDITOR HEADER -->
+
+        <div class="editor-heading">
+
+            <button
+                class="back-btn"
+                id="backToTests">
+                ← My Tests
+            </button>
+
+            <div class="editor-title">
+
+                <div>
+                    <span>TEST EDITOR</span>
+
+                    <h1 id="editorTestName">
+                        New Test
+                    </h1>
+                </div>
+
+                <div
+                    class="status-badge"
+                    id="editorStatus">
+                    Draft
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================= TEST INFORMATION ================= -->
+
+        <section class="card">
+
+            <div class="card-header">
+
+                <div>
+                    <h2>Test Information</h2>
+
+                    <p>
+                        Set the basic details of your test.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="form-grid">
+
+                <div class="form-group full">
+
+                    <label>
+                        Test Name *
+                    </label>
+
+                    <input
+                        type="text"
+                        id="testName"
+                        placeholder="Example: ICAR Mock Test 01">
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Test Code
+                    </label>
+
+                    <input
+                        type="text"
+                        id="testCode"
+                        placeholder="Example: ICAR-01">
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Duration
+                    </label>
+
+                    <div class="fixed-field">
+
+                        <input
+                            type="number"
+                            value="120"
+                            readonly>
+
+                        <span>Minutes</span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Total Questions
+                    </label>
+
+                    <div class="fixed-field">
+
+                        <input
+                            type="number"
+                            value="120"
+                            readonly>
+
+                        <span>Questions</span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Marks Per Question
+                    </label>
+
+                    <input
+                        type="number"
+                        id="marksPerQuestion"
+                        value="1"
+                        min="0"
+                        step="0.25">
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Negative Marking
+                    </label>
+
+                    <select id="negativeMarking">
+
+                        <option value="0">
+                            No Negative Marking
+                        </option>
+
+                        <option value="0.25">
+                            -0.25
+                        </option>
+
+                        <option value="0.50">
+                            -0.50
+                        </option>
+
+                        <option value="1">
+                            -1.00
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group full">
+
+                    <label>
+                        Instructions
+                    </label>
+
+                    <textarea
+                        id="instructions"
+                        rows="4"
+                        placeholder="Write instructions for students..."></textarea>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= QUESTION AREA ================= -->
+
+        <section class="question-layout">
+
+
+            <!-- QUESTION EDITOR -->
+
+            <div class="card question-card">
+
+                <div class="question-header">
+
+                    <div>
+
+                        <span class="question-label">
+                            QUESTION
+                        </span>
+
+                        <h2>
+                            Question
+                            <strong id="questionNumber">
+                                1
+                            </strong>
+                            <small>of 120</small>
+                        </h2>
+
+                    </div>
+
+                    <button
+                        class="clear-btn"
+                        id="clearQuestion">
+                        Clear
+                    </button>
+
+                </div>
+
+
+                <!-- QUESTION -->
+
+                <div class="question-input">
+
+                    <label>
+                        Question
+                    </label>
+
+                    <textarea
+                        id="questionText"
+                        rows="6"
+                        placeholder="Write your question here..."></textarea>
+
+                </div>
+
+
+                <!-- OPTIONS -->
+
+                <div class="options-area">
+
+                    <label>
+                        Options
+                    </label>
+
+
+                    <div class="option-row">
+
+                        <span class="letter">A</span>
+
+                        <input
+                            id="option0"
+                            type="text"
+                            placeholder="Option A">
+
+                        <button
+                            class="correct-btn"
+                            data-option="0">
+                            Mark Correct
+                        </button>
+
+                    </div>
+
+
+                    <div class="option-row">
+
+                        <span class="letter">B</span>
+
+                        <input
+                            id="option1"
+                            type="text"
+                            placeholder="Option B">
+
+                        <button
+                            class="correct-btn"
+                            data-option="1">
+                            Mark Correct
+                        </button>
+
+                    </div>
+
+
+                    <div class="option-row">
+
+                        <span class="letter">C</span>
+
+                        <input
+                            id="option2"
+                            type="text"
+                            placeholder="Option C">
+
+                        <button
+                            class="correct-btn"
+                            data-option="2">
+                            Mark Correct
+                        </button>
+
+                    </div>
+
+
+                    <div class="option-row">
+
+                        <span class="letter">D</span>
+
+                        <input
+                            id="option3"
+                            type="text"
+                            placeholder="Option D">
+
+                        <button
+                            class="correct-btn"
+                            data-option="3">
+                            Mark Correct
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- QUESTION BUTTONS -->
+
+                <div class="question-actions">
+
+                    <button
+                        class="secondary-btn"
+                        id="previousQuestion">
+                        ← Previous
+                    </button>
+
+                    <button
+                        class="save-question-btn"
+                        id="saveQuestion">
+                        Save Question
+                    </button>
+
+                    <button
+                        class="primary-btn"
+                        id="nextQuestion">
+                        Next →
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- QUESTION NAVIGATION -->
+
+            <aside class="card question-nav-card">
+
+                <div class="nav-heading">
+
+                    <div>
+                        <h2>Questions</h2>
+
+                        <p>
+                            Click any question to edit.
+                        </p>
+                    </div>
+
+                    <strong id="questionProgress">
+                        0/120
+                    </strong>
+
+                </div>
+
+
+                <div class="progress-track">
+
+                    <div
+                        id="progressBar"
+                        class="progress-bar">
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="question-grid"
+                    id="questionGrid">
+
+                </div>
+
+
+                <div class="legend">
+
+                    <div>
+                        <span class="legend-box empty"></span>
+                        Empty
+                    </div>
+
+                    <div>
+                        <span class="legend-box saved"></span>
+                        Saved
+                    </div>
+
+                    <div>
+                        <span class="legend-box current"></span>
+                        Current
+                    </div>
+
+                </div>
+
+            </aside>
+
+        </section>
+
+
+        <!-- ================= BOTTOM ================= -->
+
+        <div class="bottom-actions">
+
+            <button
+                class="secondary-btn"
+                id="saveDraft">
+                Save Draft
+            </button>
+
+            <button
+                class="publish-btn"
+                id="publishTest">
+                Publish Test
+            </button>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- ================= PUBLISH MODAL ================= -->
+
+<div
+    class="modal-overlay"
+    id="publishModal">
+
+    <div class="modal">
+
+        <div class="modal-icon">
+            ✓
+        </div>
+
+        <h2>Publish Test</h2>
+
+        <p>
+            Students will be able to access this test after publishing.
+        </p>
+
+        <div class="modal-info">
+
+            <div>
+                <span>Test</span>
+                <strong id="modalTestName">
+                    -
+                </strong>
+            </div>
+
+            <div>
+                <span>Questions</span>
+                <strong id="modalQuestionCount">
+                    0/120
+                </strong>
+            </div>
+
+            <div>
+                <span>Duration</span>
+                <strong>
+                    120 Minutes
+                </strong>
+            </div>
+
+        </div>
+
+        <div class="modal-visibility">
+
+            <span>Test Visibility</span>
+
+            <div class="visibility-options">
+
+                <label>
+                    <input
+                        type="radio"
+                        name="testVisibility"
+                        id="visFree"
+                        value="free"
+                        checked>
+                    Free
+                </label>
+
+                <label>
+                    <input
+                        type="radio"
+                        name="testVisibility"
+                        id="visPremium"
+                        value="premium">
+                    Premium
+                </label>
+
+            </div>
+
+        </div>
+
+        <div class="modal-buttons">
+
+            <button id="cancelPublish">
+                Cancel
+            </button>
+
+            <button
+                id="confirmPublish"
+                class="publish-confirm">
+                Publish
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ================= JAVASCRIPT ================= -->
+
+<script type="module" src="create-test.js"></script>
+
+</body>
+</html>

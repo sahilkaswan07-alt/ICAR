@@ -230,6 +230,35 @@
   }
 
   #adminSection{ display:none; }
+  #premiumSection{ display:none; }
+
+  .action-card.locked{
+    opacity:0.6;
+    cursor:not-allowed;
+  }
+  .action-card.locked:hover{
+    transform:none;
+    box-shadow:none;
+    border-color:var(--border);
+  }
+  .action-card.result-card{
+    cursor:default;
+  }
+  .action-card.result-card:hover{
+    transform:none;
+    box-shadow:none;
+    border-color:var(--border);
+  }
+  .lock-note{
+    font-size:12px;
+    font-weight:700;
+    color:var(--accent);
+  }
+  .score-note{
+    font-size:12px;
+    font-weight:700;
+    color:var(--primary);
+  }
 
   @media (max-width:520px){
     .topbar{ padding:12px 16px; }
@@ -295,6 +324,11 @@
       </a>
     </div>
 
+    <div id="premiumSection" style="margin-top:32px;">
+      <h2 class="section-title">Premium Tests <span class="badge-admin">PREMIUM</span></h2>
+      <div class="action-grid" id="premiumTestsGrid"></div>
+    </div>
+
     <div id="adminSection" style="margin-top:32px;">
       <h2 class="section-title">Admin Tools <span class="badge-admin">ADMIN</span></h2>
       <div class="action-grid">
@@ -324,7 +358,11 @@
   import {
     getFirestore,
     doc,
-    getDoc
+    getDoc,
+    collection,
+    query,
+    where,
+    getDocs
   } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
   const auth = getAuth(app);
@@ -367,6 +405,9 @@
         document.getElementById("adminSection").style.display = "block";
       }
 
+      // Load and render premium tests (locked for non-premium students)
+      await loadPremiumTests(user.uid, userData.premium === true);
+
       // Reveal app, hide loader
       loadingScreen.style.display = "none";
       appEl.style.display = "block";
@@ -377,6 +418,88 @@
         "Couldn't load your profile. Please refresh the page.";
     }
   });
+
+  // ---------- Premium tests ----------
+  async function loadPremiumTests(uid, isPremium){
+    const section = document.getElementById("premiumSection");
+    const grid = document.getElementById("premiumTestsGrid");
+
+    try {
+      const premiumQuery = query(
+        collection(db, "tests"),
+        where("status", "==", "published"),
+        where("visibility", "==", "premium")
+      );
+
+      const snapshot = await getDocs(premiumQuery);
+      const tests = snapshot.docs.map(d => d.data());
+
+      if (tests.length === 0) {
+        return; // section stays hidden
+      }
+
+      section.style.display = "block";
+      grid.innerHTML = "";
+
+      for (const test of tests) {
+        const card = document.createElement(isPremium ? "a" : "div");
+        const totalMarks = (test.totalQuestions || 0) * (test.marksPerQuestion || 1);
+
+        if (!isPremium) {
+          // Locked — student must upgrade to unlock
+          card.className = "action-card locked";
+          card.innerHTML = `
+            <div class="icon">🔒</div>
+            <div class="title">${escapeHTML(test.name)}</div>
+            <div class="desc">${test.totalQuestions || 0} questions • ${test.duration || 0} minutes</div>
+            <div class="lock-note">Upgrade to unlock →</div>
+          `;
+          card.addEventListener("click", () => { window.location.href = "payment.html"; });
+        } else {
+          // Premium student: check if they've already attempted it
+          let attempt = null;
+          try {
+            const attemptSnap = await getDoc(doc(db, "attempts", `${uid}_${test.id}`));
+            if (attemptSnap.exists()) attempt = attemptSnap.data();
+          } catch (err) {
+            console.error("Unable to check attempt status:", err);
+          }
+
+          if (attempt) {
+            card.className = "action-card result-card";
+            card.innerHTML = `
+              <div class="icon">✓</div>
+              <div class="title">${escapeHTML(test.name)}</div>
+              <div class="desc">${test.totalQuestions || 0} questions • ${test.duration || 0} minutes</div>
+              <div class="score-note">Attempted • Score: ${escapeHTML(String(attempt.score ?? "—"))}${totalMarks ? "/" + totalMarks : ""}</div>
+            `;
+          } else {
+            card.href = `take-test.html?id=${encodeURIComponent(test.id)}`;
+            card.className = "action-card admin";
+            card.innerHTML = `
+              <div class="icon">T</div>
+              <div class="title">${escapeHTML(test.name)}</div>
+              <div class="desc">${test.totalQuestions || 0} questions • ${test.duration || 0} minutes</div>
+            `;
+          }
+        }
+
+        grid.appendChild(card);
+      }
+
+    } catch (err) {
+      console.error("Unable to load premium tests:", err);
+    }
+  }
+
+  function escapeHTML(value){
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
 
   function formatDate(timestamp){
     if (!timestamp || !timestamp.toDate) return "—";
