@@ -69,6 +69,12 @@ async function loadTests() {
             error
         );
 
+        showMessage(
+            "Could not load tests (" +
+            (error.code || error.message) +
+            "). Check Firestore rules."
+        );
+
         tests = [];
 
     }
@@ -82,12 +88,21 @@ async function loadTests() {
     keyed by test.id, in the "tests" collection)
 ========================================================= */
 
-async function saveTests() {
+async function saveTests(onlyTest) {
+
+    /* Save one test (passed in, or the one open in the editor).
+       If neither exists, save everything. Returns true/false. */
+
+    const target =
+        onlyTest || getCurrentTest();
+
+    const list =
+        target ? [target] : tests;
 
     try {
 
         await Promise.all(
-            tests.map(test =>
+            list.map(test =>
                 setDoc(
                     doc(
                         db,
@@ -99,6 +114,8 @@ async function saveTests() {
             )
         );
 
+        return true;
+
     } catch (error) {
 
         console.error(
@@ -107,8 +124,12 @@ async function saveTests() {
         );
 
         showMessage(
-            "Failed to save to the server. Check your connection."
+            "Save failed (" +
+            (error.code || error.message) +
+            "). Check connection / Firestore rules."
         );
+
+        return false;
 
     }
 
@@ -311,7 +332,7 @@ function createNewTest() {
 
     tests.push(test);
 
-    saveTests();
+    saveTests(test);
 
     openTestEditor(test.id);
 
@@ -650,7 +671,7 @@ function getCurrentTest() {
    SAVE TEST INFORMATION
 ========================================================= */
 
-function saveTestInformation() {
+function saveTestInformation(persist = true) {
 
     const test =
         getCurrentTest();
@@ -692,7 +713,7 @@ function saveTestInformation() {
         test.name;
 
 
-    saveTests();
+    if (persist) saveTests();
 
 }
 
@@ -829,7 +850,8 @@ function loadQuestion() {
 ========================================================= */
 
 function saveCurrentQuestion(
-    showMessage = true
+    notify = true,
+    persist = true
 ) {
 
     const test =
@@ -882,16 +904,16 @@ function saveCurrentQuestion(
         new Date().toISOString();
 
 
-    saveTestInformation();
+    saveTestInformation(false);
 
-    saveTests();
+    if (persist) saveTests();
 
     updateQuestionGrid();
 
     updateProgress();
 
 
-    if (showMessage) {
+    if (notify) {
 
         showMessage(
             question.saved
@@ -1221,19 +1243,22 @@ document
     )
     .addEventListener(
         "click",
-        function () {
+        async function () {
 
-            saveCurrentQuestion(false);
+            saveCurrentQuestion(false, false);
 
-            saveTestInformation();
-
-            saveTests();
+            const saved =
+                await saveTests();
 
             updateStatus();
 
-            showMessage(
-                "Test draft saved."
-            );
+            if (saved) {
+
+                showMessage(
+                    "Test draft saved."
+                );
+
+            }
 
         }
     );
@@ -1272,9 +1297,9 @@ document
         "click",
         function () {
 
-            saveCurrentQuestion(false);
+            saveCurrentQuestion(false, false);
 
-            saveTestInformation();
+            saveTestInformation(false);
 
 
             const test =
@@ -1379,7 +1404,7 @@ document
     )
     .addEventListener(
         "click",
-        function () {
+        async function () {
 
             const test =
                 getCurrentTest();
@@ -1411,16 +1436,28 @@ document
                 new Date().toISOString();
 
 
-            saveTests();
-
+            const saved =
+                await saveTests();
 
             publishModal.classList.remove(
                 "show"
             );
 
+            if (!saved) {
+
+                test.status =
+                    "draft";
+
+                test.publishedAt =
+                    null;
+
+                updateStatus();
+
+                return;
+
+            }
 
             updateStatus();
-
 
             showMessage(
                 "Test published successfully."
@@ -1442,11 +1479,11 @@ document
         "click",
         function () {
 
-            saveCurrentQuestion(false);
-
-            saveTestInformation();
+            saveCurrentQuestion(false, false);
 
             saveTests();
+
+
 
             currentTestId =
                 null;
@@ -1652,3 +1689,89 @@ function escapeHTML(value) {
         );
 
 }
+
+
+/* =========================================================
+   AUTOSAVE
+   (saves ~1.5s after typing stops, and again when the
+    tab is hidden / closed, so a draft is never lost)
+========================================================= */
+
+let autosaveTimer = null;
+
+function flushAutosave() {
+
+    clearTimeout(autosaveTimer);
+
+    autosaveTimer = null;
+
+    if (!currentTestId) return;
+
+    saveCurrentQuestion(false);
+
+}
+
+function scheduleAutosave() {
+
+    if (!currentTestId) return;
+
+    clearTimeout(autosaveTimer);
+
+    autosaveTimer =
+        setTimeout(flushAutosave, 1500);
+
+}
+
+[
+    questionText,
+    testName,
+    testCode,
+    marksPerQuestion,
+    negativeMarking,
+    instructions,
+    ...[0, 1, 2, 3].map(i =>
+        document.getElementById(`option${i}`)
+    )
+].forEach(element => {
+
+    if (element) {
+
+        element.addEventListener(
+            "input",
+            scheduleAutosave
+        );
+
+    }
+
+});
+
+document
+    .querySelectorAll(".correct-btn")
+    .forEach(button => {
+
+        button.addEventListener(
+            "click",
+            scheduleAutosave
+        );
+
+    });
+
+document.addEventListener(
+    "visibilitychange",
+    function () {
+
+        if (
+            document.visibilityState === "hidden"
+        ) {
+
+            flushAutosave();
+
+        }
+
+    }
+);
+
+window.addEventListener(
+    "pagehide",
+    flushAutosave
+);
