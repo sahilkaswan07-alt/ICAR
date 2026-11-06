@@ -1,10 +1,15 @@
 /* =========================================================
    FIREBASE SETUP
-   (Requires this file to be loaded as a module:
+   (Load this file as a module:
     <script type="module" src="create-test.js"></script>)
 ========================================================= */
 
 import { app } from "./firebase-config.js";
+
+import {
+    getAuth,
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 import {
     getFirestore,
@@ -16,6 +21,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 
+const auth = getAuth(app);
 const db = getFirestore(app);
 
 
@@ -51,23 +57,13 @@ async function loadTests() {
 
     try {
 
-        const snapshot =
-            await getDocs(
-                testsCollectionRef
-            );
+        const snapshot = await getDocs(testsCollectionRef);
 
-        tests =
-            snapshot.docs.map(
-                docSnapshot =>
-                    docSnapshot.data()
-            );
+        tests = snapshot.docs.map(docSnapshot => docSnapshot.data());
 
     } catch (error) {
 
-        console.error(
-            "Unable to load tests",
-            error
-        );
+        console.error("Unable to load tests", error);
 
         showMessage(
             "Could not load tests (" +
@@ -83,32 +79,23 @@ async function loadTests() {
 
 
 /* =========================================================
-   SAVE ALL TESTS
-   (writes every test in memory to its own document,
-    keyed by test.id, in the "tests" collection)
+   SAVE TESTS
+   Saves one test (passed in, or the one open in the editor).
+   If neither exists, saves everything. Returns true/false.
 ========================================================= */
 
 async function saveTests(onlyTest) {
 
-    /* Save one test (passed in, or the one open in the editor).
-       If neither exists, save everything. Returns true/false. */
+    const target = onlyTest || getCurrentTest();
 
-    const target =
-        onlyTest || getCurrentTest();
-
-    const list =
-        target ? [target] : tests;
+    const list = target ? [target] : tests;
 
     try {
 
         await Promise.all(
             list.map(test =>
                 setDoc(
-                    doc(
-                        db,
-                        TESTS_COLLECTION,
-                        test.id
-                    ),
+                    doc(db, TESTS_COLLECTION, test.id),
                     test
                 )
             )
@@ -118,10 +105,7 @@ async function saveTests(onlyTest) {
 
     } catch (error) {
 
-        console.error(
-            "Unable to save tests",
-            error
-        );
+        console.error("Unable to save tests", error);
 
         showMessage(
             "Save failed (" +
@@ -140,103 +124,65 @@ async function saveTests(onlyTest) {
    DOM
 ========================================================= */
 
-const testListPage =
-    document.getElementById(
-        "testListPage"
-    );
+const testListPage = document.getElementById("testListPage");
 
-const testEditorPage =
-    document.getElementById(
-        "testEditorPage"
-    );
+const testEditorPage = document.getElementById("testEditorPage");
 
-const testsGrid =
-    document.getElementById(
-        "testsGrid"
-    );
+const testsGrid = document.getElementById("testsGrid");
 
-const emptyState =
-    document.getElementById(
-        "emptyState"
-    );
+const emptyState = document.getElementById("emptyState");
 
-const testName =
-    document.getElementById(
-        "testName"
-    );
+const testName = document.getElementById("testName");
 
-const testCode =
-    document.getElementById(
-        "testCode"
-    );
+const testCode = document.getElementById("testCode");
 
-const marksPerQuestion =
-    document.getElementById(
-        "marksPerQuestion"
-    );
+const marksPerQuestion = document.getElementById("marksPerQuestion");
 
-const negativeMarking =
-    document.getElementById(
-        "negativeMarking"
-    );
+const negativeMarking = document.getElementById("negativeMarking");
 
-const instructions =
-    document.getElementById(
-        "instructions"
-    );
+const instructions = document.getElementById("instructions");
 
-const questionText =
-    document.getElementById(
-        "questionText"
-    );
+const questionText = document.getElementById("questionText");
 
-const questionNumber =
-    document.getElementById(
-        "questionNumber"
-    );
+const questionNumber = document.getElementById("questionNumber");
 
-const questionGrid =
-    document.getElementById(
-        "questionGrid"
-    );
+const questionGrid = document.getElementById("questionGrid");
 
-const questionProgress =
-    document.getElementById(
-        "questionProgress"
-    );
+const questionProgress = document.getElementById("questionProgress");
 
-const progressBar =
-    document.getElementById(
-        "progressBar"
-    );
+const progressBar = document.getElementById("progressBar");
 
-const editorTestName =
-    document.getElementById(
-        "editorTestName"
-    );
+const editorTestName = document.getElementById("editorTestName");
 
-const editorStatus =
-    document.getElementById(
-        "editorStatus"
-    );
+const editorStatus = document.getElementById("editorStatus");
 
-const publishModal =
-    document.getElementById(
-        "publishModal"
-    );
+const publishModal = document.getElementById("publishModal");
 
 
 /* =========================================================
    INITIALIZE
+   Wait for Firebase to restore the login before reading
+   from Firestore, otherwise the read is denied and the
+   list comes back empty.
 ========================================================= */
 
-(async function initializeTestList() {
+onAuthStateChanged(auth, async (user) => {
+
+    if (!user) {
+
+        window.location.href = "auth.html";
+
+        return;
+
+    }
+
+    console.log("Logged in as:", user.email, user.uid);
 
     await loadTests();
 
     renderTestList();
 
-})();
+});
 
 
 /* =========================================================
@@ -251,12 +197,7 @@ function createEmptyQuestion(number) {
 
         question: "",
 
-        options: [
-            "",
-            "",
-            "",
-            ""
-        ],
+        options: ["", "", "", ""],
 
         correctAnswer: null,
 
@@ -271,68 +212,55 @@ function createEmptyQuestion(number) {
    CREATE NEW TEST
 ========================================================= */
 
-function createNewTest() {
+async function createNewTest() {
 
     const test = {
 
-        id:
-            "TEST-" +
-            Date.now(),
+        id: "TEST-" + Date.now(),
 
-        name:
-            "New Test",
+        name: "New Test",
 
-        code:
-            "",
+        code: "",
 
-        duration:
-            120,
+        duration: 120,
 
-        totalQuestions:
-            120,
+        totalQuestions: 120,
 
-        marksPerQuestion:
-            1,
+        marksPerQuestion: 1,
 
-        negativeMarking:
-            0,
+        negativeMarking: 0,
 
-        instructions:
-            "",
+        instructions: "",
 
-        visibility:
-            "free",
+        visibility: "free",
 
-        status:
-            "draft",
+        status: "draft",
 
-        createdAt:
-            new Date().toISOString(),
+        createdAt: new Date().toISOString(),
 
-        updatedAt:
-            new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
 
-        publishedAt:
-            null,
+        publishedAt: null,
 
-        questions:
-            Array.from(
-                {
-                    length:
-                        TOTAL_QUESTIONS
-                },
-                (_, index) =>
-                    createEmptyQuestion(
-                        index + 1
-                    )
-            )
+        questions: Array.from(
+            { length: TOTAL_QUESTIONS },
+            (_, index) => createEmptyQuestion(index + 1)
+        )
 
     };
 
 
     tests.push(test);
 
-    saveTests(test);
+    const saved = await saveTests(test);
+
+    if (!saved) {
+
+        tests = tests.filter(item => item.id !== test.id);
+
+        return;
+
+    }
 
     openTestEditor(test.id);
 
@@ -344,33 +272,16 @@ function createNewTest() {
 ========================================================= */
 
 document
-    .getElementById(
-        "createNewTest"
-    )
-    .addEventListener(
-        "click",
-        createNewTest
-    );
-
+    .getElementById("createNewTest")
+    .addEventListener("click", createNewTest);
 
 document
-    .getElementById(
-        "emptyCreateBtn"
-    )
-    .addEventListener(
-        "click",
-        createNewTest
-    );
-
+    .getElementById("emptyCreateBtn")
+    .addEventListener("click", createNewTest);
 
 document
-    .getElementById(
-        "newTestTop"
-    )
-    .addEventListener(
-        "click",
-        createNewTest
-    );
+    .getElementById("newTestTop")
+    .addEventListener("click", createNewTest);
 
 
 /* =========================================================
@@ -383,35 +294,26 @@ function renderTestList() {
 
     if (tests.length === 0) {
 
-        emptyState.classList.remove(
-            "hidden"
-        );
+        emptyState.classList.remove("hidden");
 
         return;
 
     }
 
 
-    emptyState.classList.add(
-        "hidden"
-    );
+    emptyState.classList.add("hidden");
 
 
     tests.forEach(test => {
 
-        const card =
-            document.createElement(
-                "div"
-            );
+        const card = document.createElement("div");
 
-        card.className =
-            "test-card";
+        card.className = "test-card";
 
 
         const savedCount =
-            test.questions.filter(
-                question =>
-                    question.saved
+            (test.questions || []).filter(
+                question => question.saved
             ).length;
 
 
@@ -525,16 +427,11 @@ function renderTestList() {
         .querySelectorAll(".edit-test")
         .forEach(button => {
 
-            button.addEventListener(
-                "click",
-                function () {
+            button.addEventListener("click", function () {
 
-                    openTestEditor(
-                        this.dataset.id
-                    );
+                openTestEditor(this.dataset.id);
 
-                }
-            );
+            });
 
         });
 
@@ -545,16 +442,11 @@ function renderTestList() {
         .querySelectorAll(".delete-test")
         .forEach(button => {
 
-            button.addEventListener(
-                "click",
-                function () {
+            button.addEventListener("click", function () {
 
-                    deleteTest(
-                        this.dataset.id
-                    );
+                deleteTest(this.dataset.id);
 
-                }
-            );
+            });
 
         });
 
@@ -565,16 +457,11 @@ function renderTestList() {
         .querySelectorAll(".view-test")
         .forEach(button => {
 
-            button.addEventListener(
-                "click",
-                function () {
+            button.addEventListener("click", function () {
 
-                    alert(
-                        "Student test page can be connected here later."
-                    );
+                alert("Student test page can be connected here later.");
 
-                }
-            );
+            });
 
         });
 
@@ -587,30 +474,19 @@ function renderTestList() {
 
 function openTestEditor(testId) {
 
-    const test =
-        tests.find(
-            item =>
-                item.id === testId
-        );
-
+    const test = tests.find(item => item.id === testId);
 
     if (!test) return;
 
 
-    currentTestId =
-        testId;
+    currentTestId = testId;
 
-    currentQuestionIndex =
-        0;
+    currentQuestionIndex = 0;
 
 
-    testListPage.classList.add(
-        "hidden"
-    );
+    testListPage.classList.add("hidden");
 
-    testEditorPage.classList.remove(
-        "hidden"
-    );
+    testEditorPage.classList.remove("hidden");
 
 
     loadTestInformation(test);
@@ -628,24 +504,18 @@ function openTestEditor(testId) {
 
 function loadTestInformation(test) {
 
-    testName.value =
-        test.name;
+    testName.value = test.name;
 
-    testCode.value =
-        test.code;
+    testCode.value = test.code;
 
-    marksPerQuestion.value =
-        test.marksPerQuestion;
+    marksPerQuestion.value = test.marksPerQuestion;
 
-    negativeMarking.value =
-        test.negativeMarking;
+    negativeMarking.value = test.negativeMarking;
 
-    instructions.value =
-        test.instructions;
+    instructions.value = test.instructions;
 
 
-    editorTestName.textContent =
-        test.name;
+    editorTestName.textContent = test.name;
 
 
     updateStatus();
@@ -659,10 +529,7 @@ function loadTestInformation(test) {
 
 function getCurrentTest() {
 
-    return tests.find(
-        test =>
-            test.id === currentTestId
-    );
+    return tests.find(test => test.id === currentTestId);
 
 }
 
@@ -673,44 +540,25 @@ function getCurrentTest() {
 
 function saveTestInformation(persist = true) {
 
-    const test =
-        getCurrentTest();
-
+    const test = getCurrentTest();
 
     if (!test) return;
 
 
-    test.name =
-        testName.value.trim()
-        || "Untitled Test";
+    test.name = testName.value.trim() || "Untitled Test";
+
+    test.code = testCode.value.trim();
+
+    test.marksPerQuestion = Number(marksPerQuestion.value) || 1;
+
+    test.negativeMarking = Number(negativeMarking.value) || 0;
+
+    test.instructions = instructions.value.trim();
+
+    test.updatedAt = new Date().toISOString();
 
 
-    test.code =
-        testCode.value.trim();
-
-
-    test.marksPerQuestion =
-        Number(
-            marksPerQuestion.value
-        ) || 1;
-
-
-    test.negativeMarking =
-        Number(
-            negativeMarking.value
-        ) || 0;
-
-
-    test.instructions =
-        instructions.value.trim();
-
-
-    test.updatedAt =
-        new Date().toISOString();
-
-
-    editorTestName.textContent =
-        test.name;
+    editorTestName.textContent = test.name;
 
 
     if (persist) saveTests();
@@ -727,46 +575,27 @@ function createQuestionGrid() {
     questionGrid.innerHTML = "";
 
 
-    for (
-        let i = 0;
-        i < TOTAL_QUESTIONS;
-        i++
-    ) {
+    for (let i = 0; i < TOTAL_QUESTIONS; i++) {
 
-        const button =
-            document.createElement(
-                "button"
-            );
+        const button = document.createElement("button");
+
+        button.textContent = i + 1;
+
+        button.dataset.index = i;
 
 
-        button.textContent =
-            i + 1;
+        button.addEventListener("click", function () {
+
+            saveCurrentQuestion(false);
+
+            currentQuestionIndex = Number(this.dataset.index);
+
+            loadQuestion();
+
+        });
 
 
-        button.dataset.index =
-            i;
-
-
-        button.addEventListener(
-            "click",
-            function () {
-
-                saveCurrentQuestion(false);
-
-                currentQuestionIndex =
-                    Number(
-                        this.dataset.index
-                    );
-
-                loadQuestion();
-
-            }
-        );
-
-
-        questionGrid.appendChild(
-            button
-        );
+        questionGrid.appendChild(button);
 
     }
 
@@ -782,39 +611,28 @@ function createQuestionGrid() {
 
 function loadQuestion() {
 
-    const test =
-        getCurrentTest();
-
+    const test = getCurrentTest();
 
     if (!test) return;
 
 
-    const question =
-        test.questions[
-            currentQuestionIndex
-        ];
+    const question = test.questions[currentQuestionIndex];
 
 
-    questionNumber.textContent =
-        currentQuestionIndex + 1;
+    questionNumber.textContent = currentQuestionIndex + 1;
 
-
-    questionText.value =
-        question.question;
+    questionText.value = question.question;
 
 
     for (let i = 0; i < 4; i++) {
 
-        document.getElementById(
-            `option${i}`
-        ).value =
+        document.getElementById(`option${i}`).value =
             question.options[i];
 
     }
 
 
-    selectedCorrectAnswer =
-        question.correctAnswer;
+    selectedCorrectAnswer = question.correctAnswer;
 
 
     updateCorrectButtons();
@@ -824,23 +642,14 @@ function loadQuestion() {
     updateProgress();
 
 
-    document
-        .getElementById(
-            "previousQuestion"
-        )
-        .disabled =
-            currentQuestionIndex === 0;
+    document.getElementById("previousQuestion").disabled =
+        currentQuestionIndex === 0;
 
 
-    document
-        .getElementById(
-            "nextQuestion"
-        )
-        .textContent =
-            currentQuestionIndex ===
-            TOTAL_QUESTIONS - 1
-                ? "Finish"
-                : "Next →";
+    document.getElementById("nextQuestion").textContent =
+        currentQuestionIndex === TOTAL_QUESTIONS - 1
+            ? "Finish"
+            : "Next →";
 
 }
 
@@ -849,59 +658,40 @@ function loadQuestion() {
    SAVE CURRENT QUESTION
 ========================================================= */
 
-function saveCurrentQuestion(
-    notify = true,
-    persist = true
-) {
+function saveCurrentQuestion(notify = true, persist = true) {
 
-    const test =
-        getCurrentTest();
-
+    const test = getCurrentTest();
 
     if (!test) return;
 
 
-    const question =
-        test.questions[
-            currentQuestionIndex
-        ];
+    const question = test.questions[currentQuestionIndex];
 
 
-    question.question =
-        questionText.value.trim();
+    question.question = questionText.value.trim();
 
 
     for (let i = 0; i < 4; i++) {
 
         question.options[i] =
-            document.getElementById(
-                `option${i}`
-            ).value.trim();
+            document.getElementById(`option${i}`).value.trim();
 
     }
 
 
-    question.correctAnswer =
-        selectedCorrectAnswer;
+    question.correctAnswer = selectedCorrectAnswer;
 
 
-    /*
-       A question is considered saved only
-       when question + all four options +
-       correct answer are completed.
-    */
+    /* A question is "saved" only when the question text,
+       all four options and the correct answer are filled. */
 
     question.saved =
         question.question !== "" &&
-        question.options.every(
-            option =>
-                option !== ""
-        ) &&
+        question.options.every(option => option !== "") &&
         question.correctAnswer !== null;
 
 
-    test.updatedAt =
-        new Date().toISOString();
+    test.updatedAt = new Date().toISOString();
 
 
     saveTestInformation(false);
@@ -931,17 +721,12 @@ function saveCurrentQuestion(
 ========================================================= */
 
 document
-    .getElementById(
-        "saveQuestion"
-    )
-    .addEventListener(
-        "click",
-        function () {
+    .getElementById("saveQuestion")
+    .addEventListener("click", function () {
 
-            saveCurrentQuestion(true);
+        saveCurrentQuestion(true);
 
-        }
-    );
+    });
 
 
 /* =========================================================
@@ -952,20 +737,13 @@ document
     .querySelectorAll(".correct-btn")
     .forEach(button => {
 
-        button.addEventListener(
-            "click",
-            function () {
+        button.addEventListener("click", function () {
 
-                selectedCorrectAnswer =
-                    Number(
-                        this.dataset.option
-                    );
+            selectedCorrectAnswer = Number(this.dataset.option);
 
+            updateCorrectButtons();
 
-                updateCorrectButtons();
-
-            }
-        );
+        });
 
     });
 
@@ -977,43 +755,24 @@ document
 function updateCorrectButtons() {
 
     document
-        .querySelectorAll(
-            ".correct-btn"
-        )
+        .querySelectorAll(".correct-btn")
         .forEach(button => {
 
-            const option =
-                Number(
-                    button.dataset.option
-                );
+            const option = Number(button.dataset.option);
+
+            const row = button.closest(".option-row");
 
 
-            const row =
-                button.closest(
-                    ".option-row"
-                );
+            row.classList.remove("correct");
+
+            button.textContent = "Mark Correct";
 
 
-            row.classList.remove(
-                "correct"
-            );
+            if (selectedCorrectAnswer === option) {
 
+                row.classList.add("correct");
 
-            button.textContent =
-                "Mark Correct";
-
-
-            if (
-                selectedCorrectAnswer ===
-                option
-            ) {
-
-                row.classList.add(
-                    "correct"
-                );
-
-                button.textContent =
-                    "✓ Correct";
+                button.textContent = "✓ Correct";
 
             }
 
@@ -1027,35 +786,25 @@ function updateCorrectButtons() {
 ========================================================= */
 
 document
-    .getElementById(
-        "nextQuestion"
-    )
-    .addEventListener(
-        "click",
-        function () {
+    .getElementById("nextQuestion")
+    .addEventListener("click", function () {
 
-            saveCurrentQuestion(false);
+        saveCurrentQuestion(false);
 
 
-            if (
-                currentQuestionIndex <
-                TOTAL_QUESTIONS - 1
-            ) {
+        if (currentQuestionIndex < TOTAL_QUESTIONS - 1) {
 
-                currentQuestionIndex++;
+            currentQuestionIndex++;
 
-                loadQuestion();
+            loadQuestion();
 
-            } else {
+        } else {
 
-                showMessage(
-                    "You are on Question 120."
-                );
-
-            }
+            showMessage("You are on Question 120.");
 
         }
-    );
+
+    });
 
 
 /* =========================================================
@@ -1063,28 +812,21 @@ document
 ========================================================= */
 
 document
-    .getElementById(
-        "previousQuestion"
-    )
-    .addEventListener(
-        "click",
-        function () {
+    .getElementById("previousQuestion")
+    .addEventListener("click", function () {
 
-            saveCurrentQuestion(false);
+        saveCurrentQuestion(false);
 
 
-            if (
-                currentQuestionIndex > 0
-            ) {
+        if (currentQuestionIndex > 0) {
 
-                currentQuestionIndex--;
+            currentQuestionIndex--;
 
-                loadQuestion();
-
-            }
+            loadQuestion();
 
         }
-    );
+
+    });
 
 
 /* =========================================================
@@ -1092,54 +834,40 @@ document
 ========================================================= */
 
 document
-    .getElementById(
-        "clearQuestion"
-    )
-    .addEventListener(
-        "click",
-        function () {
+    .getElementById("clearQuestion")
+    .addEventListener("click", function () {
 
-            questionText.value = "";
+        questionText.value = "";
 
-            for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 4; i++) {
 
-                document.getElementById(
-                    `option${i}`
-                ).value = "";
-
-            }
-
-
-            selectedCorrectAnswer =
-                null;
-
-
-            const test =
-                getCurrentTest();
-
-
-            if (test) {
-
-                test.questions[
-                    currentQuestionIndex
-                ] =
-                    createEmptyQuestion(
-                        currentQuestionIndex + 1
-                    );
-
-            }
-
-
-            updateCorrectButtons();
-
-            updateQuestionGrid();
-
-            updateProgress();
-
-            saveTests();
+            document.getElementById(`option${i}`).value = "";
 
         }
-    );
+
+
+        selectedCorrectAnswer = null;
+
+
+        const test = getCurrentTest();
+
+        if (test) {
+
+            test.questions[currentQuestionIndex] =
+                createEmptyQuestion(currentQuestionIndex + 1);
+
+        }
+
+
+        updateCorrectButtons();
+
+        updateQuestionGrid();
+
+        updateProgress();
+
+        saveTests();
+
+    });
 
 
 /* =========================================================
@@ -1148,53 +876,33 @@ document
 
 function updateQuestionGrid() {
 
-    const test =
-        getCurrentTest();
-
+    const test = getCurrentTest();
 
     if (!test) return;
 
 
-    const buttons =
-        questionGrid.querySelectorAll(
-            "button"
-        );
+    const buttons = questionGrid.querySelectorAll("button");
 
 
-    buttons.forEach(
-        (button, index) => {
+    buttons.forEach((button, index) => {
 
-            button.classList.remove(
-                "saved",
-                "current"
-            );
+        button.classList.remove("saved", "current");
 
 
-            if (
-                test.questions[index]
-                    .saved
-            ) {
+        if (test.questions[index].saved) {
 
-                button.classList.add(
-                    "saved"
-                );
-
-            }
-
-
-            if (
-                index ===
-                currentQuestionIndex
-            ) {
-
-                button.classList.add(
-                    "current"
-                );
-
-            }
+            button.classList.add("saved");
 
         }
-    );
+
+
+        if (index === currentQuestionIndex) {
+
+            button.classList.add("current");
+
+        }
+
+    });
 
 }
 
@@ -1205,30 +913,19 @@ function updateQuestionGrid() {
 
 function updateProgress() {
 
-    const test =
-        getCurrentTest();
-
+    const test = getCurrentTest();
 
     if (!test) return;
 
 
     const savedCount =
-        test.questions.filter(
-            question =>
-                question.saved
-        ).length;
+        test.questions.filter(question => question.saved).length;
 
 
-    questionProgress.textContent =
-        `${savedCount}/120`;
+    questionProgress.textContent = `${savedCount}/120`;
 
 
-    const percentage =
-        (savedCount / 120) * 100;
-
-
-    progressBar.style.width =
-        percentage + "%";
+    progressBar.style.width = (savedCount / 120) * 100 + "%";
 
 }
 
@@ -1238,30 +935,22 @@ function updateProgress() {
 ========================================================= */
 
 document
-    .getElementById(
-        "saveDraft"
-    )
-    .addEventListener(
-        "click",
-        async function () {
+    .getElementById("saveDraft")
+    .addEventListener("click", async function () {
 
-            saveCurrentQuestion(false, false);
+        saveCurrentQuestion(false, false);
 
-            const saved =
-                await saveTests();
+        const saved = await saveTests();
 
-            updateStatus();
+        updateStatus();
 
-            if (saved) {
+        if (saved) {
 
-                showMessage(
-                    "Test draft saved."
-                );
-
-            }
+            showMessage("Test draft saved.");
 
         }
-    );
+
+    });
 
 
 /* =========================================================
@@ -1270,9 +959,7 @@ document
 
 function updateStatus() {
 
-    const test =
-        getCurrentTest();
-
+    const test = getCurrentTest();
 
     if (!test) return;
 
@@ -1290,88 +977,62 @@ function updateStatus() {
 ========================================================= */
 
 document
-    .getElementById(
-        "publishTest"
-    )
-    .addEventListener(
-        "click",
-        function () {
+    .getElementById("publishTest")
+    .addEventListener("click", function () {
 
-            saveCurrentQuestion(false, false);
+        saveCurrentQuestion(false, false);
 
-            saveTestInformation(false);
+        saveTestInformation(false);
 
 
-            const test =
-                getCurrentTest();
+        const test = getCurrentTest();
+
+        if (!test) return;
 
 
-            if (!test) return;
+        const savedCount =
+            test.questions.filter(question => question.saved).length;
 
 
-            const savedCount =
-                test.questions.filter(
-                    question =>
-                        question.saved
-                ).length;
+        if (test.name.trim() === "") {
 
+            alert("Please enter a test name.");
 
-            if (
-                test.name.trim() === ""
-            ) {
-
-                alert(
-                    "Please enter a test name."
-                );
-
-                return;
-
-            }
-
-
-            if (
-                savedCount !==
-                TOTAL_QUESTIONS
-            ) {
-
-                alert(
-                    `You have completed ${savedCount}/120 questions.\n\n` +
-                    `All 120 questions must be completed before publishing.`
-                );
-
-                return;
-
-            }
-
-
-            document.getElementById(
-                "modalTestName"
-            ).textContent =
-                test.name;
-
-
-            document.getElementById(
-                "modalQuestionCount"
-            ).textContent =
-                `${savedCount}/120`;
-
-
-            const visibilityToCheck =
-                (test.visibility || "free") === "premium"
-                    ? "visPremium"
-                    : "visFree";
-
-            document.getElementById(
-                visibilityToCheck
-            ).checked = true;
-
-
-            publishModal.classList.add(
-                "show"
-            );
+            return;
 
         }
-    );
+
+
+        if (savedCount !== TOTAL_QUESTIONS) {
+
+            alert(
+                `You have completed ${savedCount}/120 questions.\n\n` +
+                `All 120 questions must be completed before publishing.`
+            );
+
+            return;
+
+        }
+
+
+        document.getElementById("modalTestName").textContent =
+            test.name;
+
+        document.getElementById("modalQuestionCount").textContent =
+            `${savedCount}/120`;
+
+
+        const visibilityToCheck =
+            (test.visibility || "free") === "premium"
+                ? "visPremium"
+                : "visFree";
+
+        document.getElementById(visibilityToCheck).checked = true;
+
+
+        publishModal.classList.add("show");
+
+    });
 
 
 /* =========================================================
@@ -1379,19 +1040,12 @@ document
 ========================================================= */
 
 document
-    .getElementById(
-        "cancelPublish"
-    )
-    .addEventListener(
-        "click",
-        function () {
+    .getElementById("cancelPublish")
+    .addEventListener("click", function () {
 
-            publishModal.classList.remove(
-                "show"
-            );
+        publishModal.classList.remove("show");
 
-        }
-    );
+    });
 
 
 /* =========================================================
@@ -1399,72 +1053,55 @@ document
 ========================================================= */
 
 document
-    .getElementById(
-        "confirmPublish"
-    )
-    .addEventListener(
-        "click",
-        async function () {
+    .getElementById("confirmPublish")
+    .addEventListener("click", async function () {
 
-            const test =
-                getCurrentTest();
+        const test = getCurrentTest();
+
+        if (!test) return;
 
 
-            if (!test) return;
-
-
-            const selectedVisibility =
-                document.querySelector(
-                    'input[name="testVisibility"]:checked'
-                );
-
-            test.visibility =
-                selectedVisibility
-                    ? selectedVisibility.value
-                    : "free";
-
-
-            test.status =
-                "published";
-
-
-            test.publishedAt =
-                new Date().toISOString();
-
-
-            test.updatedAt =
-                new Date().toISOString();
-
-
-            const saved =
-                await saveTests();
-
-            publishModal.classList.remove(
-                "show"
+        const selectedVisibility =
+            document.querySelector(
+                'input[name="testVisibility"]:checked'
             );
 
-            if (!saved) {
+        test.visibility =
+            selectedVisibility
+                ? selectedVisibility.value
+                : "free";
 
-                test.status =
-                    "draft";
 
-                test.publishedAt =
-                    null;
+        test.status = "published";
 
-                updateStatus();
+        test.publishedAt = new Date().toISOString();
 
-                return;
+        test.updatedAt = new Date().toISOString();
 
-            }
+
+        const saved = await saveTests();
+
+        publishModal.classList.remove("show");
+
+
+        if (!saved) {
+
+            test.status = "draft";
+
+            test.publishedAt = null;
 
             updateStatus();
 
-            showMessage(
-                "Test published successfully."
-            );
+            return;
 
         }
-    );
+
+
+        updateStatus();
+
+        showMessage("Test published successfully.");
+
+    });
 
 
 /* =========================================================
@@ -1472,34 +1109,23 @@ document
 ========================================================= */
 
 document
-    .getElementById(
-        "backToTests"
-    )
-    .addEventListener(
-        "click",
-        function () {
+    .getElementById("backToTests")
+    .addEventListener("click", async function () {
 
-            saveCurrentQuestion(false, false);
+        saveCurrentQuestion(false, false);
 
-            saveTests();
+        await saveTests();
 
 
+        currentTestId = null;
 
-            currentTestId =
-                null;
+        testEditorPage.classList.add("hidden");
 
-            testEditorPage.classList.add(
-                "hidden"
-            );
+        testListPage.classList.remove("hidden");
 
-            testListPage.classList.remove(
-                "hidden"
-            );
+        renderTestList();
 
-            renderTestList();
-
-        }
-    );
+    });
 
 
 /* =========================================================
@@ -1508,12 +1134,7 @@ document
 
 async function deleteTest(testId) {
 
-    const test =
-        tests.find(
-            item =>
-                item.id === testId
-        );
-
+    const test = tests.find(item => item.id === testId);
 
     if (!test) return;
 
@@ -1523,39 +1144,26 @@ async function deleteTest(testId) {
             `Delete "${test.name}"?\n\nThis will permanently remove the test from the database.`
         );
 
-
     if (!confirmed) return;
 
 
-    tests =
-        tests.filter(
-            item =>
-                item.id !== testId
-        );
-
+    tests = tests.filter(item => item.id !== testId);
 
     renderTestList();
 
 
     try {
 
-        await deleteDoc(
-            doc(
-                db,
-                TESTS_COLLECTION,
-                testId
-            )
-        );
+        await deleteDoc(doc(db, TESTS_COLLECTION, testId));
 
     } catch (error) {
 
-        console.error(
-            "Unable to delete test",
-            error
-        );
+        console.error("Unable to delete test", error);
 
         showMessage(
-            "Failed to delete from the server. Check your connection."
+            "Failed to delete from the server (" +
+            (error.code || error.message) +
+            ")."
         );
 
     }
@@ -1569,11 +1177,7 @@ async function deleteTest(testId) {
 
 function showMessage(message) {
 
-    const existing =
-        document.querySelector(
-            ".toast-message"
-        );
-
+    const existing = document.querySelector(".toast-message");
 
     if (existing) {
 
@@ -1582,33 +1186,20 @@ function showMessage(message) {
     }
 
 
-    const toast =
-        document.createElement(
-            "div"
-        );
+    const toast = document.createElement("div");
+
+    toast.className = "toast-message";
+
+    toast.textContent = message;
+
+    document.body.appendChild(toast);
 
 
-    toast.className =
-        "toast-message";
+    setTimeout(function () {
 
+        toast.remove();
 
-    toast.textContent =
-        message;
-
-
-    document.body.appendChild(
-        toast
-    );
-
-
-    setTimeout(
-        function () {
-
-            toast.remove();
-
-        },
-        2200
-    );
+    }, 3500);
 
 }
 
@@ -1617,11 +1208,7 @@ function showMessage(message) {
    TOAST STYLE
 ========================================================= */
 
-const toastStyle =
-    document.createElement(
-        "style"
-    );
-
+const toastStyle = document.createElement("style");
 
 toastStyle.textContent = `
 
@@ -1647,17 +1234,13 @@ toastStyle.textContent = `
 
     font-weight: 600;
 
-    box-shadow:
-        0 6px 20px rgba(0,0,0,0.2);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
 
 }
 
 `;
 
-
-document.head.appendChild(
-    toastStyle
-);
+document.head.appendChild(toastStyle);
 
 
 /* =========================================================
@@ -1667,26 +1250,11 @@ document.head.appendChild(
 function escapeHTML(value) {
 
     return String(value)
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
 }
 
@@ -1717,8 +1285,7 @@ function scheduleAutosave() {
 
     clearTimeout(autosaveTimer);
 
-    autosaveTimer =
-        setTimeout(flushAutosave, 1500);
+    autosaveTimer = setTimeout(flushAutosave, 1500);
 
 }
 
@@ -1729,17 +1296,12 @@ function scheduleAutosave() {
     marksPerQuestion,
     negativeMarking,
     instructions,
-    ...[0, 1, 2, 3].map(i =>
-        document.getElementById(`option${i}`)
-    )
+    ...[0, 1, 2, 3].map(i => document.getElementById(`option${i}`))
 ].forEach(element => {
 
     if (element) {
 
-        element.addEventListener(
-            "input",
-            scheduleAutosave
-        );
+        element.addEventListener("input", scheduleAutosave);
 
     }
 
@@ -1749,29 +1311,18 @@ document
     .querySelectorAll(".correct-btn")
     .forEach(button => {
 
-        button.addEventListener(
-            "click",
-            scheduleAutosave
-        );
+        button.addEventListener("click", scheduleAutosave);
 
     });
 
-document.addEventListener(
-    "visibilitychange",
-    function () {
+document.addEventListener("visibilitychange", function () {
 
-        if (
-            document.visibilityState === "hidden"
-        ) {
+    if (document.visibilityState === "hidden") {
 
-            flushAutosave();
-
-        }
+        flushAutosave();
 
     }
-);
 
-window.addEventListener(
-    "pagehide",
-    flushAutosave
-);
+});
+
+window.addEventListener("pagehide", flushAutosave);
