@@ -57,34 +57,63 @@ const emptyState =
    LOAD PUBLISHED TESTS FROM FIREBASE
 ========================================================= */
 
+async function isPremiumStudent() {
+
+    try {
+
+        const userSnap =
+            await getDoc(doc(db, "users", currentUser.uid));
+
+        return userSnap.exists() && userSnap.data().premium === true;
+
+    } catch (error) {
+
+        console.error("Unable to check premium status", error);
+
+        return false;
+
+    }
+
+}
+
+
 async function loadPublishedTests() {
 
     try {
 
-        const publishedQuery =
+        const premium = await isPremiumStudent();
+
+        // Free tests: every logged-in student.
+        // Premium tests: only students whose account is premium.
+        const queries = [
             query(
                 testsCollectionRef,
-                where(
-                    "status",
-                    "==",
-                    "published"
+                where("status", "==", "published"),
+                where("visibility", "==", "free")
+            )
+        ];
+
+        if (premium) {
+
+            queries.push(
+                query(
+                    testsCollectionRef,
+                    where("status", "==", "published"),
+                    where("visibility", "==", "premium")
                 )
             );
 
-        const snapshot =
-            await getDocs(
-                publishedQuery
+        }
+
+        const snapshots =
+            await Promise.all(
+                queries.map(item => getDocs(item))
             );
 
-        // Only Free tests belong on this page.
-        // Tests saved before the visibility field existed
-        // are treated as Free for backward compatibility.
         const tests =
-            snapshot.docs
-                .map(docSnapshot => docSnapshot.data())
-                .filter(test =>
-                    (test.visibility || "free") === "free"
-                );
+            snapshots.flatMap(
+                snapshot => snapshot.docs.map(d => d.data())
+            );
 
         // Most recently published first
         tests.sort(
@@ -107,7 +136,30 @@ async function loadPublishedTests() {
 
         renderTests([]);
 
+        showLoadError(error);
+
     }
+
+}
+
+
+function showLoadError(error) {
+
+    const item = document.createElement("li");
+
+    item.className = "test-card";
+    item.dataset.dynamic = "true";
+
+    item.innerHTML = `
+        <div class="test-card-main">
+            <h2 class="test-name">Couldn't load tests</h2>
+            <div class="test-meta">
+                <span>${escapeHTML(error.code || error.message || "Unknown error")}</span>
+            </div>
+        </div>
+    `;
+
+    testList.appendChild(item);
 
 }
 
@@ -236,12 +288,16 @@ function renderTests(tests) {
             </div>
 
             <div class="test-card-side">
-                <span class="price-badge free">Free</span>
+                ${
+                    test.visibility === "premium"
+                    ? '<span class="price-badge" style="background:#f2a900;color:#fff;">Premium</span>'
+                    : '<span class="price-badge free">Free</span>'
+                }
                 ${
                     test.attempt
                     ? `
-                        <span class="btn-primary start-btn" style="opacity:.6; pointer-events:none; cursor:default;">
-                            Attempted${
+                        <a class="btn-primary start-btn" href="result.html?id=${encodeURIComponent(test.id)}">
+                            View result${
                                 typeof test.attempt.score !== "undefined"
                                     ? " \u2022 Score: " + escapeHTML(String(test.attempt.score)) +
                                       (test.marksPerQuestion && test.totalQuestions
@@ -249,7 +305,7 @@ function renderTests(tests) {
                                           : "")
                                     : ""
                             }
-                        </span>
+                        </a>
                     `
                     : `
                         <a class="btn-primary start-btn" href="take-test.html?id=${encodeURIComponent(test.id)}">Start test</a>

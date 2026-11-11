@@ -395,7 +395,7 @@
 
       // Stats
       document.getElementById("statAttempted").textContent =
-        typeof userData.testsAttempted === "number" ? userData.testsAttempted : 0;
+        await countAttempts(user.uid);
       document.getElementById("statStatus").textContent =
         userData.premium ? "Premium" : "Free";
       document.getElementById("statSince").textContent = formatDate(userData.createdAt);
@@ -423,6 +423,9 @@
   async function loadPremiumTests(uid, isPremium){
     const section = document.getElementById("premiumSection");
     const grid = document.getElementById("premiumTestsGrid");
+
+    // Premium tests are only visible to premium accounts
+    if (!isPremium) return;
 
     try {
       const premiumQuery = query(
@@ -466,12 +469,13 @@
           }
 
           if (attempt) {
-            card.className = "action-card result-card";
+            card.href = `result.html?id=${encodeURIComponent(test.id)}`;
+            card.className = "action-card";
             card.innerHTML = `
               <div class="icon">✓</div>
               <div class="title">${escapeHTML(test.name)}</div>
               <div class="desc">${test.totalQuestions || 0} questions • ${test.duration || 0} minutes</div>
-              <div class="score-note">Attempted • Score: ${escapeHTML(String(attempt.score ?? "—"))}${totalMarks ? "/" + totalMarks : ""}</div>
+              <div class="score-note">Attempted • Score: ${escapeHTML(String(attempt.score ?? "—"))}${totalMarks ? "/" + totalMarks : ""} • View answers →</div>
             `;
           } else {
             card.href = `take-test.html?id=${encodeURIComponent(test.id)}`;
@@ -489,6 +493,19 @@
 
     } catch (err) {
       console.error("Unable to load premium tests:", err);
+    }
+  }
+
+  // ---------- Attempts count ----------
+  async function countAttempts(uid){
+    try {
+      const snap = await getDocs(
+        query(collection(db, "attempts"), where("uid", "==", uid))
+      );
+      return snap.size;
+    } catch (err) {
+      console.error("Unable to count attempts:", err);
+      return 0;
     }
   }
 

@@ -3,25 +3,37 @@
 ========================================================= */
 
 import {
+    getAuth,
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+import {
     getFirestore,
-    collection,
-    addDoc,
+    doc,
+    getDoc,
+    setDoc,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 import { app } from "./firebase-config.js";
 
+const auth = getAuth(app);
 const db = getFirestore(app);
+
+/* Loaded from Firestore after login */
+let currentUser = null;
+let testData = null;
+let testId = null;
 
 
 /* =========================================================
    TEST CONFIGURATION
 ========================================================= */
 
-const TOTAL_QUESTIONS = 120;
+let TOTAL_QUESTIONS = 0; // set from the test document
 
 // 120 minutes = 7200 seconds
-const TEST_DURATION = 120 * 60;
+let TEST_DURATION = 120 * 60; // set from the test document
 
 
 /* =========================================================
@@ -51,80 +63,7 @@ evaluation system.
 It is NEVER displayed to the student.
 ========================================================= */
 
-const questions = [
-
-    {
-        question: "Which vitamin is primarily associated with prevention of rickets in animals?",
-        options: [
-            "Vitamin A",
-            "Vitamin B12",
-            "Vitamin C",
-            "Vitamin D"
-        ],
-        correct: 3
-    },
-
-    {
-        question: "Which of the following is the normal body temperature range of cattle?",
-        options: [
-            "35–36°C",
-            "38–39.5°C",
-            "40–42°C",
-            "42–44°C"
-        ],
-        correct: 1
-    },
-
-    {
-        question: "Which organ is primarily responsible for filtering blood and producing urine?",
-        options: [
-            "Liver",
-            "Kidney",
-            "Spleen",
-            "Pancreas"
-        ],
-        correct: 1
-    },
-
-    {
-        question: "Which disease is commonly known as foot-and-mouth disease?",
-        options: [
-            "FMD",
-            "BSE",
-            "IBR",
-            "HS"
-        ],
-        correct: 0
-    }
-
-];
-
-
-/* =========================================================
-   GENERATE REMAINING QUESTIONS
-========================================================= */
-
-while (questions.length < TOTAL_QUESTIONS) {
-
-    const number = questions.length + 1;
-
-    questions.push({
-
-        question:
-            `Sample ICAR Mock Test Question ${number}. Replace this question with your actual question from the question bank.`,
-
-        options: [
-            `Option A for Question ${number}`,
-            `Option B for Question ${number}`,
-            `Option C for Question ${number}`,
-            `Option D for Question ${number}`
-        ],
-
-        // Correct answer remains hidden from student
-        correct: Math.floor(Math.random() * 4)
-
-    });
-}
+let questions = []; // loaded from Firestore (tests/{id}.questions)
 
 
 /* =========================================================
@@ -1013,277 +952,100 @@ async function submitTest() {
 
 
     /* =====================================================
-       CALCULATE SCORE
+       CALCULATE SCORE (against the questions loaded from Firestore)
     ===================================================== */
+
+    const marks = Number(testData.marksPerQuestion) || 1;
+    const negative = Number(testData.negativeMarking) || 0;
 
     let correctAnswers = 0;
 
-
-    questions.forEach(
-        (question, index) => {
-
-            if (
-                selectedAnswers[index] ===
-                question.correct
-            ) {
-
-                correctAnswers++;
-
-            }
-
+    questions.forEach((question, index) => {
+        if (selectedAnswers[index] === question.correct) {
+            correctAnswers++;
         }
-    );
-
+    });
 
     const answered =
-        selectedAnswers.filter(
-            answer => answer !== null
-        ).length;
+        selectedAnswers.filter(answer => answer !== null).length;
 
+    const wrongAnswers = answered - correctAnswers;
+    const unanswered = TOTAL_QUESTIONS - answered;
 
-    const wrongAnswers =
-        answered - correctAnswers;
-
-
-    const unanswered =
-        TOTAL_QUESTIONS - answered;
-
+    const score = correctAnswers * marks - wrongAnswers * negative;
+    const maxScore = TOTAL_QUESTIONS * marks;
 
     const percentage =
-        Number(
-            (
-                (correctAnswers /
-                    TOTAL_QUESTIONS) *
-                100
-            ).toFixed(2)
-        );
+        Number(Math.max(0, (score / maxScore) * 100).toFixed(2));
 
-
-    const submittedAt =
-        new Date();
-
+    const submittedAt = new Date();
 
     const timeTakenSeconds =
-        Math.max(
-            0,
-            Math.floor(
-                (
-                    submittedAt -
-                    testStartedAt
-                ) / 1000
-            )
-        );
-
+        Math.max(0, Math.floor((submittedAt - testStartedAt) / 1000));
 
     /* =====================================================
-       SUBMISSION OBJECT
+       ATTEMPT DOCUMENT  ->  attempts/{uid}_{testId}
+       One document per student per test = one attempt only.
     ===================================================== */
 
-    const answerPaper = {
+    const attempt = {
+        uid: currentUser.uid,
+        testId: testId,
+        testName: testData.name || "Test",
+        visibility: testData.visibility || "free",
 
-        testId:
-            "ICAR-MOCK-TEST",
+        studentName: studentInfo.name,
+        studentEmail: studentInfo.email,
 
-        testNo:
-            "001",
+        startedAt: testStartedAt.toISOString(),
+        submittedAt: submittedAt.toISOString(),
+        timeTakenSeconds: timeTakenSeconds,
 
-        testName:
-            "ICAR Mock Test",
+        totalQuestions: TOTAL_QUESTIONS,
+        answered: answered,
+        correctAnswers: correctAnswers,
+        wrongAnswers: wrongAnswers,
+        unanswered: unanswered,
 
-        testType:
-            "free",
+        marksPerQuestion: marks,
+        negativeMarking: negative,
+        score: score,
+        maxScore: maxScore,
+        percentage: percentage,
 
+        answers: selectedAnswers,
 
-        /* STUDENT */
-
-        studentName:
-            studentInfo.name,
-
-        studentEmail:
-            studentInfo.email,
-
-
-        /* TIME */
-
-        startedAt:
-            testStartedAt.toISOString(),
-
-        submittedAt:
-            submittedAt.toISOString(),
-
-
-        /* RESULT */
-
-        totalQuestions:
-            TOTAL_QUESTIONS,
-
-        answered:
-            answered,
-
-        correctAnswers:
-            correctAnswers,
-
-        wrongAnswers:
-            wrongAnswers,
-
-        unanswered:
-            unanswered,
-
-        score:
-            correctAnswers,
-
-        percentage:
-            percentage,
-
-
-        /* TIME TAKEN */
-
-        timeTakenSeconds:
-            timeTakenSeconds,
-
-
-        /* STUDENT ANSWERS */
-
-        answers:
-            selectedAnswers,
-
-
-        /* ADMIN RESULT */
-
-        resultStatus:
-            "submitted",
-
-        rank:
-            null,
-
-
-        /* FIRESTORE SERVER TIME */
-
-        createdAt:
-            serverTimestamp()
-
+        createdAt: serverTimestamp()
     };
-
-
-    /* =====================================================
-       SAVE TO FIRESTORE
-    ===================================================== */
 
     try {
 
-        const submissionRef =
-            await addDoc(
-                collection(
-                    db,
-                    "submissions"
-                ),
-                answerPaper
-            );
-
-
-        submissionSaved =
-            true;
-
-
-        /* =================================================
-           LOCAL BACKUP
-        ================================================= */
-
-        localStorage.setItem(
-
-            "studentAnswerPaper",
-
-            JSON.stringify({
-
-                ...answerPaper,
-
-                submissionId:
-                    submissionRef.id,
-
-                createdAt:
-                    submittedAt.toISOString()
-
-            })
-
+        await setDoc(
+            doc(db, "attempts", `${currentUser.uid}_${testId}`),
+            attempt
         );
 
+        submissionSaved = true;
 
-        /* CLOSE MODALS */
+        window.location.href =
+            "result.html?id=" + encodeURIComponent(testId);
 
-        submitModal.classList.remove(
-            "show"
-        );
+    } catch (error) {
 
-        previewModal.classList.remove(
-            "show"
-        );
+        console.error("Firestore submission error:", error);
 
+        /* Let the student try again if saving failed */
+        testSubmitted = false;
 
-        /* DISABLE TEST */
-
-        previousBtn.disabled =
-            true;
-
-        nextBtn.disabled =
-            true;
-
-        submitTestBtn.disabled =
-            true;
-
-
-        /* SHOW RESULT PENDING */
-
-        resultPending.classList.add(
-            "show"
-        );
-
-
-        /* Show student's name if element exists */
-
-        const submittedStudentInfo =
-            document.getElementById(
-                "submittedStudentInfo"
-            );
-
-
-        if (submittedStudentInfo) {
-
-            submittedStudentInfo.textContent =
-                studentInfo.name;
-
+        if (timeRemaining > 0 && !timerInterval) {
+            timerInterval = setInterval(updateTimer, 1000);
         }
 
-
-        console.log(
-            "Test submission saved:",
-            submissionRef.id
-        );
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Firestore submission error:",
-            error
-        );
-
-
-        /*
-           Allow the student to try submission again
-           if Firestore failed.
-        */
-
-        testSubmitted =
-            false;
-
-
         alert(
-            "Your test could not be saved. Please check your internet connection and try again."
+            "Your test could not be saved. Please check your internet connection and try again.\n\n" +
+            "If you have already submitted this test, open it from your dashboard to see your result."
         );
-
     }
-
 }
 
 
@@ -1294,7 +1056,7 @@ async function submitTest() {
 function goToDashboard() {
 
     window.location.href =
-        "student-dashboard.html";
+        "dashboard.html";
 
 }
 
@@ -1326,10 +1088,115 @@ window.addEventListener(
 
 /* =========================================================
    INITIALIZE
+   login -> already attempted? -> free/premium check -> load test
 ========================================================= */
 
-createQuestionNavigation();
+onAuthStateChanged(auth, async (user) => {
 
-showQuestion();
+    if (!user) {
+        window.location.href = "auth.html";
+        return;
+    }
 
-updateTimerDisplay();
+    currentUser = user;
+
+    testId = new URLSearchParams(window.location.search).get("id");
+
+    if (!testId) {
+        alert("No test selected.");
+        window.location.href = "tests.html";
+        return;
+    }
+
+    try {
+
+        const [testSnap, userSnap, attemptSnap] = await Promise.all([
+            getDoc(doc(db, "tests", testId)),
+            getDoc(doc(db, "users", user.uid)),
+            getDoc(doc(db, "attempts", `${user.uid}_${testId}`))
+        ]);
+
+        /* 1. One attempt only: already attempted -> show result paper */
+        if (attemptSnap.exists()) {
+            window.location.replace(
+                "result.html?id=" + encodeURIComponent(testId)
+            );
+            return;
+        }
+
+        /* 2. Test must exist and be published */
+        if (!testSnap.exists() || testSnap.data().status !== "published") {
+            alert("This test is not available.");
+            window.location.href = "tests.html";
+            return;
+        }
+
+        testData = testSnap.data();
+
+        const userData = userSnap.exists() ? userSnap.data() : {};
+
+        /* 3. Premium tests: premium students only */
+        if (testData.visibility === "premium" && userData.premium !== true) {
+            alert("This is a premium test. Please upgrade to unlock it.");
+            window.location.href = "payment.html";
+            return;
+        }
+
+        /* 4. Load questions */
+        questions = (testData.questions || []).map(item => ({
+            question: item.question,
+            options: item.options,
+            correct: item.correctAnswer
+        }));
+
+        if (questions.length === 0) {
+            alert("This test has no questions yet.");
+            window.location.href = "tests.html";
+            return;
+        }
+
+        TOTAL_QUESTIONS = questions.length;
+        TEST_DURATION = (Number(testData.duration) || 120) * 60;
+        timeRemaining = TEST_DURATION;
+
+        selectedAnswers = new Array(TOTAL_QUESTIONS).fill(null);
+        visitedQuestions = new Array(TOTAL_QUESTIONS).fill(false);
+
+        /* 5. Student details come from the logged-in account */
+        const name = userData.name || user.displayName || "Student";
+        const email = userData.email || user.email || "";
+
+        if (studentNameInput) {
+            studentNameInput.value = name;
+            studentNameInput.readOnly = true;
+        }
+
+        if (studentEmailInput) {
+            studentEmailInput.value = email;
+            studentEmailInput.readOnly = true;
+        }
+
+        updateTimerDisplay();
+        createQuestionNavigation();
+        showQuestion();
+
+    } catch (error) {
+
+        console.error("Unable to load test:", error);
+
+        if (error.code === "permission-denied") {
+            alert("This test is not available to your account. Premium tests need a premium account.");
+            window.location.href = "tests.html";
+            return;
+        }
+
+        alert(
+            "Could not load this test (" +
+            (error.code || error.message) +
+            "). Please try again."
+        );
+
+        window.location.href = "tests.html";
+    }
+
+});

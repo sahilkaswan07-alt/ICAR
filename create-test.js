@@ -397,9 +397,9 @@ function renderTestList() {
                     test.status === "published"
                     ? `
                         <button
-                            class="view-test"
+                            class="view-test unpublish-test"
                             data-id="${test.id}">
-                            View
+                            Unpublish
                         </button>
                     `
                     : ""
@@ -451,18 +451,13 @@ function renderTestList() {
         });
 
 
-    /* VIEW */
-
+    /* UNPUBLISH */
     document
-        .querySelectorAll(".view-test")
+        .querySelectorAll(".unpublish-test")
         .forEach(button => {
-
             button.addEventListener("click", function () {
-
-                alert("Student test page can be connected here later.");
-
+                unpublishTest(this.dataset.id);
             });
-
         });
 
 }
@@ -494,6 +489,8 @@ function openTestEditor(testId) {
     createQuestionGrid();
 
     loadQuestion();
+
+    updateStatus();
 
 }
 
@@ -969,6 +966,13 @@ function updateStatus() {
             ? "Published"
             : "Draft";
 
+    const unpublishBtn = document.getElementById("unpublishTest");
+
+    if (unpublishBtn) {
+        unpublishBtn.style.display =
+            test.status === "published" ? "" : "none";
+    }
+
 }
 
 
@@ -1032,6 +1036,59 @@ document
 
         publishModal.classList.add("show");
 
+    });
+
+
+/* =========================================================
+   UNPUBLISH TEST
+   Moves a published test back to Draft so students no longer
+   see it. Existing student attempts and results are kept.
+========================================================= */
+
+async function unpublishTest(testId) {
+
+    const test = tests.find(item => item.id === testId);
+
+    if (!test) return;
+
+    const confirmed = confirm(
+        `Unpublish "${test.name}"?\n\n` +
+        `Students will no longer see this test. ` +
+        `Results of students who already attempted it are kept.`
+    );
+
+    if (!confirmed) return;
+
+    /* If it is open in the editor, keep any unsaved edits */
+    if (currentTestId === testId) {
+        saveCurrentQuestion(false, false);
+        saveTestInformation(false);
+    }
+
+    const previousStatus = test.status;
+    const previousPublishedAt = test.publishedAt;
+
+    test.status = "draft";
+    test.publishedAt = null;
+    test.updatedAt = new Date().toISOString();
+
+    const saved = await saveTests(test);
+
+    if (!saved) {
+        test.status = previousStatus;
+        test.publishedAt = previousPublishedAt;
+        return;
+    }
+
+    updateStatus();
+    renderTestList();
+    showMessage("Test unpublished. It is now a draft.");
+}
+
+document
+    .getElementById("unpublishTest")
+    .addEventListener("click", function () {
+        unpublishTest(currentTestId);
     });
 
 

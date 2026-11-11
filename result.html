@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Result | ICAR Test Series</title>
+<style>
+  :root{
+    --primary:#1e6f3f; --primary-dark:#154d2b; --accent:#f2a900;
+    --bg:#f4f7f5; --card:#ffffff; --text:#1b1f1d; --muted:#6b7570;
+    --error:#c0392b; --border:#dde3df;
+    --ok-bg:#e8f5ec; --bad-bg:#fdecea;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;min-height:100vh;font-family:'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
+
+  #loadingScreen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:var(--bg);z-index:50;}
+  .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #loadingScreen p{color:var(--muted);font-size:14px;}
+
+  .topbar{background:var(--card);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+  .brand{font-size:18px;font-weight:800;color:var(--primary-dark);}
+  .brand span{color:var(--accent);}
+  .nav a{margin-left:10px;padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;color:var(--primary-dark);text-decoration:none;background:#fff;}
+  .nav a:hover{border-color:var(--primary);}
+
+  .container{max-width:900px;margin:0 auto;padding:28px 20px 60px;}
+  h1{margin:0 0 4px;font-size:22px;}
+  .sub{margin:0 0 22px;color:var(--muted);font-size:14px;}
+
+  .score-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:18px;display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between;}
+  .score-big{font-size:42px;font-weight:800;color:var(--primary-dark);line-height:1;}
+  .score-big small{font-size:20px;color:var(--muted);font-weight:700;}
+  .score-label{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:6px;}
+  .pct{font-size:15px;font-weight:700;color:var(--primary);margin-top:6px;}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:26px;}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+  .stat .l{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;}
+  .stat .v{font-size:22px;font-weight:800;margin-top:4px;}
+  .stat.c .v{color:var(--primary);} .stat.w .v{color:var(--error);} .stat.u .v{color:var(--muted);}
+
+  .section-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .section-head h2{margin:0;font-size:17px;}
+  .filters button{margin-left:6px;padding:7px 14px;border:1px solid var(--border);background:#fff;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);}
+  .filters button.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+
+  .q-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:14px;}
+  .q-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .q-no{font-size:13px;font-weight:800;color:var(--muted);}
+  .badge{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;}
+  .badge.correct{background:var(--ok-bg);color:var(--primary);}
+  .badge.wrong{background:var(--bad-bg);color:var(--error);}
+  .badge.skipped{background:#eef0ef;color:var(--muted);}
+  .q-text{font-size:15px;font-weight:600;line-height:1.5;margin-bottom:12px;white-space:pre-wrap;}
+
+  .opt{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px;font-size:14px;}
+  .opt .letter{flex:0 0 26px;height:26px;border-radius:50%;background:#eef0ef;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;}
+  .opt .txt{flex:1;line-height:1.45;padding-top:3px;}
+  .opt .tag{font-size:11px;font-weight:800;white-space:nowrap;padding-top:5px;}
+  .opt.correct{background:var(--ok-bg);border-color:var(--primary);}
+  .opt.correct .letter{background:var(--primary);color:#fff;}
+  .opt.correct .tag{color:var(--primary);}
+  .opt.wrong{background:var(--bad-bg);border-color:var(--error);}
+  .opt.wrong .letter{background:var(--error);color:#fff;}
+  .opt.wrong .tag{color:var(--error);}
+
+  .note{background:#fff8e6;border:1px solid #f2d98a;color:#7a5a00;padding:12px 14px;border-radius:10px;font-size:13px;margin-bottom:18px;}
+  .empty{text-align:center;color:var(--muted);padding:30px 0;font-size:14px;}
+  @media (max-width:520px){.topbar{padding:12px 14px;}.container{padding:22px 14px 50px;}}
+</style>
+</head>
+<body>
+
+<div id="loadingScreen">
+  <div class="spinner"></div>
+  <p>Checking your result...</p>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="brand">ICAR <span>Test Series</span></div>
+    <div class="nav">
+      <a href="tests.html">Take a Test</a>
+      <a href="dashboard.html">Dashboard</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <h1 id="testName">Result</h1>
+    <p class="sub" id="submittedOn"></p>
+
+    <div id="paperNote" class="note" style="display:none;"></div>
+
+    <div class="score-card">
+      <div>
+        <div class="score-label">Your Score</div>
+        <div class="score-big"><span id="scoreValue">0</span> <small>/ <span id="maxScore">0</span></small></div>
+        <div class="pct" id="percentage"></div>
+      </div>
+      <div>
+        <div class="score-label">Time Taken</div>
+        <div class="score-big" style="font-size:26px;" id="timeTaken">—</div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat c"><div class="l">Correct</div><div class="v" id="statCorrect">0</div></div>
+      <div class="stat w"><div class="l">Wrong</div><div class="v" id="statWrong">0</div></div>
+      <div class="stat u"><div class="l">Not Answered</div><div class="v" id="statSkipped">0</div></div>
+      <div class="stat"><div class="l">Questions</div><div class="v" id="statTotal">0</div></div>
+    </div>
+
+    <div id="paperSection">
+      <div class="section-head">
+        <h2>Answer Paper</h2>
+        <div class="filters" id="filters">
+          <button data-filter="all" class="active">All</button>
+          <button data-filter="correct">Correct</button>
+          <button data-filter="wrong">Wrong</button>
+          <button data-filter="skipped">Not Answered</button>
+        </div>
+      </div>
+      <div id="paper"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="result.js"></script>
+</body>
+</html>
