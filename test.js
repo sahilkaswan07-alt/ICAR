@@ -112,9 +112,11 @@ async function loadPublishedTests() {
 
         const tests =
             snapshots.flatMap(
-                snapshot => snapshot.docs.map(d => d.data())
+                snapshot => snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
             );
 
+         console.log("Tests found:", tests.length, tests);
+         
         // Most recently published first
         tests.sort(
             (a, b) =>
