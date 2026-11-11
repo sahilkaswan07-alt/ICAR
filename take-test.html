@@ -92,6 +92,13 @@
 
                 <button
                     type="button"
+                    class="nav-toggle-btn"
+                    id="navToggleBtn">
+                    Questions
+                </button>
+
+                <button
+                    type="button"
                     class="control-btn next-btn"
                     id="nextBtn">
                     Next →
@@ -101,6 +108,8 @@
 
         </section>
 
+
+        <div class="nav-backdrop" id="navBackdrop"></div>
 
         <!-- RIGHT / QUESTION NAVIGATION -->
         <aside class="navigation-panel">
@@ -329,6 +338,28 @@
     </div>
 
     <script type="module" src="take-test.js"></script>
+
+    <!-- Question-navigation drawer (iPad portrait / phones) -->
+    <script>
+        (function () {
+            var panel = document.querySelector(".navigation-panel");
+            var backdrop = document.getElementById("navBackdrop");
+            var toggle = document.getElementById("navToggleBtn");
+            function setOpen(open) {
+                panel.classList.toggle("open", open);
+                backdrop.classList.toggle("show", open);
+            }
+            toggle.addEventListener("click", function () { setOpen(true); });
+            backdrop.addEventListener("click", function () { setOpen(false); });
+            // picking a question closes the drawer
+            document.getElementById("questionNavigation").addEventListener("click", function (e) {
+                if (e.target.closest(".question-number")) setOpen(false);
+            });
+            window.addEventListener("resize", function () {
+                if (window.innerWidth >= 900) setOpen(false);
+            });
+        })();
+    </script>
 
 </body>
 </html>
